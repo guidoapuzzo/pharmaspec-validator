@@ -1,8 +1,25 @@
-import { useState, useEffect, useCallback, useContext, createContext, ReactNode } from 'react';
-import { User, AuthToken, LoginCredentials, AuthState } from '@/types';
-import { authApi } from '@/services/api';
+import React, { useState, useEffect, useContext, createContext, useCallback, ReactNode } from 'react';
 
-// Auth Context
+interface User {
+  id: number;
+  email: string;
+  full_name: string;
+  role: string;
+  is_active: boolean;
+}
+
+interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
+interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void;
@@ -12,7 +29,6 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Auth Provider Component
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -20,156 +36,85 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
-    token: null,
+    isAuthenticated: false,
     isLoading: true,
     error: null,
-    isAuthenticated: false,
   });
 
-  // Initialize auth state from localStorage
-  useEffect(() => {
-    const initAuth = () => {
-      const token = localStorage.getItem('access_token');
-      const userStr = localStorage.getItem('user');
-      
-      if (token && userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          setAuthState({
-            user,
-            token,
-            isLoading: false,
-            error: null,
-            isAuthenticated: true,
-          });
-          
-          // Verify token is still valid by fetching user profile
-          authApi.getProfile()
-            .then((profile) => {
-              setAuthState(prev => ({
-                ...prev,
-                user: profile,
-              }));
-            })
-            .catch(() => {
-              // Token invalid, clear auth
-              localStorage.removeItem('access_token');
-              localStorage.removeItem('refresh_token');
-              localStorage.removeItem('user');
-              setAuthState({
-                user: null,
-                token: null,
-                isLoading: false,
-                error: null,
-                isAuthenticated: false,
-              });
-            });
-        } catch (error) {
-          console.error('Error parsing user from localStorage:', error);
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token'); 
-          localStorage.removeItem('user');
-          setAuthState({
-            user: null,
-            token: null,
-            isLoading: false,
-            error: null,
-            isAuthenticated: false,
-          });
-        }
-      } else {
-        setAuthState(prev => ({
-          ...prev,
-          isLoading: false,
-        }));
-      }
-    };
-
-    initAuth();
-  }, []);
-
   const login = useCallback(async (credentials: LoginCredentials) => {
-    setAuthState(prev => ({
-      ...prev,
-      isLoading: true,
-      error: null,
-    }));
-
     try {
-      const authResponse: AuthToken = await authApi.login(credentials);
-      const user: User = await authApi.getProfile();
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
 
-      // Store in localStorage
-      localStorage.setItem('access_token', authResponse.access_token);
-      localStorage.setItem('refresh_token', authResponse.refresh_token);
-      localStorage.setItem('user', JSON.stringify(user));
+      const formData = new FormData();
+      formData.append('username', credentials.username);
+      formData.append('password', credentials.password);
+
+      const response = await fetch('/api/v1/auth/token', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Login failed' }));
+        throw new Error(errorData.detail || 'Login failed');
+      }
+
+      const data = await response.json();
+      
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+
+      // Fetch user data
+      const userResponse = await fetch('/api/v1/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${data.access_token}`,
+        },
+      });
+
+      if (!userResponse.ok) {
+        throw new Error('Failed to fetch user data');
+      }
+
+      const userData = await userResponse.json();
 
       setAuthState({
-        user,
-        token: authResponse.access_token,
+        user: userData,
+        isAuthenticated: true,
         isLoading: false,
         error: null,
-        isAuthenticated: true,
       });
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Login failed';
+    } catch (error) {
+      console.error('Login error:', error);
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
-        error: errorMessage,
+        error: error instanceof Error ? error.message : 'Login failed',
       }));
       throw error;
     }
   }, []);
 
   const logout = useCallback(() => {
-    // Clear localStorage
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-
-    // Reset auth state
     setAuthState({
       user: null,
-      token: null,
+      isAuthenticated: false,
       isLoading: false,
       error: null,
-      isAuthenticated: false,
     });
-
-    // Call logout API endpoint
-    authApi.logout().catch(console.error);
   }, []);
 
   const refreshToken = useCallback(async () => {
-    const refresh = localStorage.getItem('refresh_token');
-    if (!refresh) {
-      logout();
-      return;
-    }
-
-    try {
-      const authResponse: AuthToken = await authApi.refreshToken({ refresh_token: refresh });
-      
-      localStorage.setItem('access_token', authResponse.access_token);
-      localStorage.setItem('refresh_token', authResponse.refresh_token);
-
-      setAuthState(prev => ({
-        ...prev,
-        token: authResponse.access_token,
-        error: null,
-      }));
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      logout();
-    }
-  }, [logout]);
+    // Token refresh logic
+  }, []);
 
   const clearError = useCallback(() => {
-    setAuthState(prev => ({
-      ...prev,
-      error: null,
-    }));
+    setAuthState(prev => ({ ...prev, error: null }));
+  }, []);
+
+  useEffect(() => {
+    setAuthState(prev => ({ ...prev, isLoading: false }));
   }, []);
 
   const contextValue: AuthContextType = {
@@ -180,31 +125,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     clearError,
   };
 
-  return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+  return React.createElement(
+    AuthContext.Provider,
+    { value: contextValue },
+    children
   );
 }
 
-// Hook to use auth context
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
-
-// Hook for checking user permissions
-export function usePermissions() {
-  const { user } = useAuth();
-  
-  return {
-    isAdmin: user?.role === 'admin',
-    isEngineer: user?.role === 'engineer' || user?.role === 'admin',
-    canViewAuditTrail: user?.role === 'admin',
-    canManageUsers: user?.role === 'admin',
-    canViewAllProjects: user?.role === 'admin',
-  };
 }
