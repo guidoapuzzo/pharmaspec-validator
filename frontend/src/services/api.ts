@@ -9,10 +9,10 @@ import {
 } from '@/types';
 
 // API Base Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
 
 class ApiService {
-  private api: AxiosInstance;
+  protected api: AxiosInstance;
 
   constructor() {
     this.api = axios.create({
@@ -73,7 +73,7 @@ class ApiService {
   }
 
   // Generic request method
-  private async request<T>(config: AxiosRequestConfig): Promise<T> {
+  protected async request<T>(config: AxiosRequestConfig): Promise<T> {
     const response: AxiosResponse<T> = await this.api(config);
     return response.data;
   }
