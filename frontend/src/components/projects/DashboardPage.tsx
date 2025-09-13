@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/common/Card';
+import { Card, CardContent } from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
@@ -242,9 +242,9 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="flex space-x-2">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to={`/projects/${project.id}`}>View Details</Link>
-                      </Button>
+                      <Link to={`/projects/${project.id}`}>
+                        <Button variant="outline" size="sm">View Details</Button>
+                      </Link>
                     </div>
                   </div>
                 </CardContent>
