@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/common/Card';
+import { Card, CardContent } from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import Modal from '@/components/common/Modal';
@@ -109,9 +109,9 @@ export default function ProjectDetailsPage() {
           </div>
         </div>
         <div className="mt-6">
-          <Button variant="outline" asChild>
-            <Link to="/dashboard">Back to Dashboard</Link>
-          </Button>
+          <Link to="/dashboard">
+            <Button variant="outline">Back to Dashboard</Button>
+          </Link>
         </div>
       </div>
     );
@@ -207,16 +207,16 @@ export default function ProjectDetailsPage() {
       </Card>
 
       {/* Matrix Entries */}
-      <Card>
-        <CardHeader>
+      <Card padding="none">
+        <div className="p-6 border-b">
           <div className="flex items-center justify-between">
-            <CardTitle>Traceability Matrix ({matrixEntries.length})</CardTitle>
+            <h3 className="text-lg font-semibold">Traceability Matrix ({matrixEntries.length})</h3>
             <Button size="sm">
               Export Matrix
             </Button>
           </div>
-        </CardHeader>
-        <CardContent padding="none">
+        </div>
+        <CardContent>
           {matrixEntries.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
