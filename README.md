@@ -47,6 +47,15 @@ cd backend && uvicorn app.main:app --reload
 cd frontend && npm run dev
 ```
 
+### Default Login Credentials
+
+The application automatically creates default users on first startup:
+
+- **Admin**: `admin@pharmaspec.local` / `AdminPass123!`
+- **Engineer**: `engineer@pharmaspec.local` / `EngineerPass123!`
+
+These credentials are defined in `backend/app/core/config.py` and can be overridden via environment variables.
+
 ## GxP Compliance Features
 
 - **Data Integrity**: ALCOA+ principles (Attributable, Legible, Contemporaneous, Original, Accurate)
