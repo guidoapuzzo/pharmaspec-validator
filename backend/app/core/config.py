@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Optional, Union
-from pydantic_settings import BaseSettings
-from pydantic import AnyHttpUrl, PostgresDsn, validator
+from pydantic import AnyHttpUrl, BaseSettings, PostgresDsn, validator
 import secrets
 
 
@@ -75,6 +74,12 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
+    
+    # Default Users (for automatic seeding)
+    DEFAULT_ADMIN_EMAIL: str = "admin@pharmaspec.local"
+    DEFAULT_ADMIN_PASSWORD: str = "AdminPass123!"
+    DEFAULT_ENGINEER_EMAIL: str = "engineer@pharmaspec.local" 
+    DEFAULT_ENGINEER_PASSWORD: str = "EngineerPass123!"
     
     # GxP Compliance
     AUDIT_LOG_RETENTION_DAYS: int = 2555  # 7 years as per GxP requirements
