@@ -10,6 +10,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import settings
 from app.core.database import create_tables
+from app.core.seed import seed_database
 from app.api.v1 import auth, projects
 
 # Configure logging
@@ -29,6 +30,10 @@ async def lifespan(app: FastAPI):
     try:
         await create_tables()
         logger.info("Database tables created/verified")
+        
+        # Seed database with default users
+        await seed_database()
+        
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")
         raise
