@@ -78,9 +78,9 @@ class Settings(BaseSettings):
     
     # Default Users (for automatic seeding)
     DEFAULT_ADMIN_EMAIL: str = "admin@pharmaspec.local"
-    DEFAULT_ADMIN_PASSWORD: str = "AdminPass123!"
+    DEFAULT_ADMIN_PASSWORD: str = "Admin123"
     DEFAULT_ENGINEER_EMAIL: str = "engineer@pharmaspec.local" 
-    DEFAULT_ENGINEER_PASSWORD: str = "EngineerPass123!"
+    DEFAULT_ENGINEER_PASSWORD: str = "Engineer123"
     
     # GxP Compliance
     AUDIT_LOG_RETENTION_DAYS: int = 2555  # 7 years as per GxP requirements
