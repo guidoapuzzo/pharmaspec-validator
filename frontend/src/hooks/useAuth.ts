@@ -49,7 +49,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       formData.append('username', credentials.username);
       formData.append('password', credentials.password);
 
-      const response = await fetch('/api/v1/auth/token', {
+      const response = await fetch('http://localhost:8000/api/v1/auth/token', {
         method: 'POST',
         body: formData,
       });
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       localStorage.setItem('refresh_token', data.refresh_token);
 
       // Fetch user data
-      const userResponse = await fetch('/api/v1/auth/me', {
+      const userResponse = await fetch('http://localhost:8000/api/v1/auth/me', {
         headers: {
           'Authorization': `Bearer ${data.access_token}`,
         },
