@@ -18,25 +18,11 @@ interface Project {
   };
 }
 
-interface MatrixEntry {
-  id: number;
-  requirement_text: string;
-  requirement_category: string;
-  specification_reference: string;
-  test_method: string;
-  acceptance_criteria: string;
-  verification_status: 'pending' | 'verified' | 'failed';
-  created_at: string;
-  updated_at: string;
-}
-
 export default function ProjectDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
-  const [matrixEntries, setMatrixEntries] = useState<MatrixEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedEntry, setSelectedEntry] = useState<MatrixEntry | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
@@ -47,33 +33,27 @@ export default function ProjectDetailsPage() {
         setIsLoading(true);
         setError(null);
 
-        const [projectResponse, matricesResponse] = await Promise.all([
-          fetch(`/api/v1/projects/${id}/`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-              'Content-Type': 'application/json',
-            },
-          }),
-          fetch(`/api/v1/projects/${id}/matrices/`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-              'Content-Type': 'application/json',
-            },
-          }),
-        ]);
+        // Fetch project details - note: no trailing slash
+        const projectResponse = await fetch(`http://localhost:8000/api/v1/projects/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-        if (!projectResponse.ok || !matricesResponse.ok) {
+        if (!projectResponse.ok) {
+          if (projectResponse.status === 401) {
+            throw new Error('Authentication failed. Please log in again.');
+          }
           throw new Error('Failed to fetch project data');
         }
 
         const projectData = await projectResponse.json();
-        const matricesData = await matricesResponse.json();
-
         setProject(projectData);
-        setMatrixEntries(matricesData);
+
       } catch (error) {
         console.error('Error fetching project data:', error);
-        setError('Failed to load project data. Please try again.');
+        setError(error instanceof Error ? error.message : 'Failed to load project data. Please try again.');
       } finally {
         setIsLoading(false);
       }
@@ -123,12 +103,12 @@ export default function ProjectDetailsPage() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
-      verified: { color: 'bg-green-100 text-green-800', label: 'Verified' },
-      failed: { color: 'bg-red-100 text-red-800', label: 'Failed' },
+      active: { color: 'bg-green-100 text-green-800', label: 'Active' },
+      completed: { color: 'bg-blue-100 text-blue-800', label: 'Completed' },
+      archived: { color: 'bg-gray-100 text-gray-800', label: 'Archived' },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
 
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
@@ -206,159 +186,77 @@ export default function ProjectDetailsPage() {
         </CardContent>
       </Card>
 
-      {/* Matrix Entries */}
+      {/* Documents Section */}
       <Card padding="none">
         <div className="p-6 border-b">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Traceability Matrix ({matrixEntries.length})</h3>
+            <h3 className="text-lg font-semibold">Documents</h3>
+            <Button size="sm" onClick={() => setShowUploadModal(true)}>
+              Upload Document
+            </Button>
+          </div>
+        </div>
+        <CardContent>
+          <div className="text-center py-12">
+            <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <span className="text-2xl">📄</span>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No documents yet</h3>
+            <p className="text-gray-500 mb-6">Upload specification documents to begin analysis.</p>
+            <Button onClick={() => setShowUploadModal(true)}>
+              Upload Documents
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Requirements Section */}
+      <Card padding="none">
+        <div className="p-6 border-b">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Requirements</h3>
+            <Button size="sm">
+              Add Requirement
+            </Button>
+          </div>
+        </div>
+        <CardContent>
+          <div className="text-center py-12">
+            <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <span className="text-2xl">📋</span>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No requirements yet</h3>
+            <p className="text-gray-500 mb-6">Add requirements to trace against supplier specifications.</p>
+            <Button>
+              Add Requirements
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Matrix Entries Section */}
+      <Card padding="none">
+        <div className="p-6 border-b">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Traceability Matrix</h3>
             <Button size="sm">
               Export Matrix
             </Button>
           </div>
         </div>
         <CardContent>
-          {matrixEntries.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <span className="text-2xl">📋</span>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No matrix entries yet</h3>
-              <p className="text-gray-500 mb-6">Upload documents and generate your traceability matrix.</p>
-              <Button onClick={() => setShowUploadModal(true)}>
-                Upload Documents
-              </Button>
+          <div className="text-center py-12">
+            <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <span className="text-2xl">🔗</span>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Requirement
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Category
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Specification Reference
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Last Updated
-                    </th>
-                    <th className="relative px-6 py-3">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {matrixEntries.map((entry) => (
-                    <tr key={entry.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900 max-w-xs truncate">
-                          {entry.requirement_text}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{entry.requirement_category}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">{entry.specification_reference}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {getStatusBadge(entry.verification_status)}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-500">{formatDate(entry.updated_at)}</div>
-                      </td>
-                      <td className="px-6 py-4 text-right text-sm font-medium">
-                        <button
-                          onClick={() => setSelectedEntry(entry)}
-                          className="text-pharma-600 hover:text-pharma-900"
-                        >
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No matrix entries yet</h3>
+            <p className="text-gray-500 mb-6">Upload documents and add requirements to generate the traceability matrix.</p>
+            <Button>
+              Generate Matrix
+            </Button>
+          </div>
         </CardContent>
       </Card>
-
-      {/* Entry Details Modal */}
-      <Modal
-        isOpen={!!selectedEntry}
-        onClose={() => setSelectedEntry(null)}
-        title="Matrix Entry Details"
-        size="lg"
-      >
-        {selectedEntry && (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Requirement Text
-              </label>
-              <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
-                {selectedEntry.requirement_text}
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
-                </label>
-                <p className="text-sm text-gray-900">{selectedEntry.requirement_category}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Status
-                </label>
-                {getStatusBadge(selectedEntry.verification_status)}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Specification Reference
-              </label>
-              <p className="text-sm text-gray-900">{selectedEntry.specification_reference}</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Test Method
-              </label>
-              <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
-                {selectedEntry.test_method}
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Acceptance Criteria
-              </label>
-              <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
-                {selectedEntry.acceptance_criteria}
-              </p>
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <Button variant="outline" onClick={() => setSelectedEntry(null)}>
-                Close
-              </Button>
-              <Button>
-                Edit Entry
-              </Button>
-            </div>
-          </div>
-        )}
-      </Modal>
 
       {/* Upload Modal */}
       <Modal
@@ -374,9 +272,9 @@ export default function ProjectDetailsPage() {
                 <span className="text-2xl">📄</span>
               </div>
               <div>
-                <h3 className="text-lg font-medium text-gray-900">Upload URS Documents</h3>
+                <h3 className="text-lg font-medium text-gray-900">Upload Specification Documents</h3>
                 <p className="mt-2 text-sm text-gray-500">
-                  Upload PDF documents containing User Requirements Specifications
+                  Upload PDF documents containing supplier specifications
                 </p>
               </div>
               <div>
@@ -389,8 +287,9 @@ export default function ProjectDetailsPage() {
             <p className="font-medium mb-2">Supported formats:</p>
             <ul className="list-disc list-inside space-y-1">
               <li>PDF documents (.pdf)</li>
+              <li>Word documents (.docx)</li>
+              <li>Excel spreadsheets (.xlsx)</li>
               <li>Maximum file size: 50MB per file</li>
-              <li>Multiple files can be uploaded simultaneously</li>
             </ul>
           </div>
 
