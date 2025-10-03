@@ -56,12 +56,6 @@ def create_application() -> FastAPI:
         lifespan=lifespan
     )
     
-    # Add security middleware as recommended in FastAPI Context7 docs
-    app.add_middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=["localhost", "127.0.0.1", "*.pharmaspec.local"]
-    )
-    
     # Add CORS middleware
     if settings.BACKEND_CORS_ORIGINS:
         app.add_middleware(
@@ -71,6 +65,12 @@ def create_application() -> FastAPI:
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+    # Add security middleware as recommended in FastAPI Context7 docs
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=["localhost", "127.0.0.1", "*.pharmaspec.local"]
+    )
     
     # Add custom middleware for audit logging
     @app.middleware("http")
