@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import LoginPage from './components/auth/LoginPage';
 import DashboardPage from './components/projects/DashboardPage';
 import ProjectDetailsPage from './components/projects/ProjectDetailsPage';
+import AuditTrailPage from './components/admin/AuditTrailPage';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/projects/:id" element={<ProjectDetailsPage />} />
+        <Route path="/audit" element={<AuditTrailPage />} />
         <Route path="/login" element={<Navigate to="/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
