@@ -4,54 +4,54 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import CreateProjectModal from '@/components/projects/CreateProjectModal';
 
-interface Project {
+interface ProjectSummary {
   id: number;
   name: string;
   description: string;
   status: 'active' | 'completed' | 'archived';
   created_at: string;
-  updated_at: string;
-  owner: {
-    full_name: string;
-    email: string;
-  };
+  documents_count: number;
+  requirements_count: number;
   matrix_entries_count: number;
+  completion_percentage: number;
 }
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const fetchProjects = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await fetch('http://localhost:8000/api/v1/projects/', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects');
+      }
+
+      const data = await response.json();
+      setProjects(data);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+      setError('Failed to load projects. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        const response = await fetch('/api/v1/projects/', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch projects');
-        }
-
-        const data = await response.json();
-        setProjects(data);
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-        setError('Failed to load projects. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchProjects();
   }, []);
 
@@ -79,6 +79,11 @@ export default function DashboardPage() {
     });
   };
 
+  const handleCreateSuccess = () => {
+    // Refresh projects list
+    fetchProjects();
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -100,7 +105,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
-          <Button>
+          <Button onClick={() => setShowCreateModal(true)}>
             Create New Project
           </Button>
         </div>
@@ -213,7 +218,7 @@ export default function DashboardPage() {
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
               <p className="text-gray-500 mb-6">Get started by creating your first CSV validation project.</p>
-              <Button>Create Your First Project</Button>
+              <Button onClick={() => setShowCreateModal(true)}>Create Your First Project</Button>
             </CardContent>
           </Card>
         ) : (
@@ -236,9 +241,11 @@ export default function DashboardPage() {
                         {project.description}
                       </p>
                       <div className="mt-3 flex items-center space-x-6 text-sm text-gray-500">
-                        <span>Owner: {project.owner.full_name}</span>
                         <span>Created: {formatDate(project.created_at)}</span>
+                        <span>Documents: {project.documents_count}</span>
+                        <span>Requirements: {project.requirements_count}</span>
                         <span>Matrix Entries: {project.matrix_entries_count}</span>
+                        <span>Completion: {project.completion_percentage.toFixed(0)}%</span>
                       </div>
                     </div>
                     <div className="flex space-x-2">
@@ -253,6 +260,13 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Create Project Modal */}
+      <CreateProjectModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   );
 }
