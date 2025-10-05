@@ -1,5 +1,5 @@
 from typing import List, Any
-from fastapi import APIRouter, Depends, HTTPException, status, Security, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Security, Request, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload
@@ -384,3 +384,79 @@ async def get_project_statistics(
             "compliance_rate": (matrix_stats.compliant or 0) / max(matrix_stats.total or 1, 1) * 100
         }
     }
+
+@router.post("/{project_id}/documents")
+async def upload_document(
+    project_id: int,
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Security(get_current_user, scopes=["engineer"]),
+    db: AsyncSession = Depends(get_db),
+    _: bool = Depends(verify_project_access)
+) -> Any:
+    """Upload a document for the project"""
+    from app.services.document_processor import DocumentProcessor
+    from app.models.document import Document
+    import hashlib
+    
+    # Validate file
+    processor = DocumentProcessor()
+    content = await file.read()
+    
+    validation = await processor.validate_file(
+        filename=file.filename,
+        content=content,
+        max_size=settings.MAX_UPLOAD_SIZE
+    )
+    
+    if not validation["valid"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=validation["error"]
+        )
+    
+    # Save file
+    save_result = await processor.save_file(
+        content=content,
+        original_filename=file.filename,
+        project_id=project_id,
+        validation_result=validation
+    )
+    
+    if not save_result["success"]:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=save_result["error"]
+        )
+    
+    # Create document record
+    document = Document(
+        filename=save_result["filename"],
+        original_filename=save_result["original_filename"],
+        file_path=save_result["file_path"],
+        file_size=save_result["file_size"],
+        mime_type=save_result["mime_type"],
+        file_hash=save_result["file_hash"],
+        project_id=project_id,
+        extraction_status="pending"
+    )
+    
+    db.add(document)
+    await db.commit()
+    await db.refresh(document)
+    
+    # Log audit event
+    await log_audit_event(
+        request=request,
+        current_user=current_user,
+        action="DOCUMENT_UPLOADED",
+        entity_type="document",
+        entity_id=document.id,
+        details={
+            "filename": file.filename,
+            "size": save_result["file_size"]
+        },
+        db=db
+    )
+    
+    return document
