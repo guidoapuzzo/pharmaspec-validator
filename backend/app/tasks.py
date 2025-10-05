@@ -1,13 +1,11 @@
 import logging
 from celery import Celery
-from sqlalchemy import select, update
+from sqlalchemy import create_engine, select, update
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func
 
 from app.core.config import settings
-from app.core.database import AsyncSessionLocal
 from app.models.document import Document
-from app.services.ai_service import AIService
-from app.services.document_processor import DocumentProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +27,16 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
 )
 
+# Create synchronous database engine for Celery workers
+# Convert asyncpg URL to psycopg2 URL
+sync_db_url = str(settings.DATABASE_URL).replace(
+    'postgresql+asyncpg://', 
+    'postgresql+psycopg2://'
+)
+
+sync_engine = create_engine(sync_db_url, pool_pre_ping=True)
+SyncSessionLocal = sessionmaker(bind=sync_engine)
+
 
 @celery_app.task(name="tasks.process_document", bind=True, max_retries=3)
 def process_document_task(self, document_id: int):
@@ -38,86 +46,89 @@ def process_document_task(self, document_id: int):
     Args:
         document_id: ID of the document to process
     """
-    import asyncio
+    db = SyncSessionLocal()
     
-    async def _process():
-        async with AsyncSessionLocal() as db:
-            try:
-                # Get document from database
-                stmt = select(Document).where(Document.id == document_id)
-                result = await db.execute(stmt)
-                document = result.scalar_one_or_none()
-                
-                if not document:
-                    logger.error(f"Document {document_id} not found")
-                    return
-                
-                logger.info(f"Starting extraction for document {document_id}: {document.filename}")
-                
-                # Update status to processing
-                document.extraction_status = "processing"
-                await db.commit()
-                
-                # Initialize services
-                ai_service = AIService()
-                doc_processor = DocumentProcessor()
-                
-                # Read file content
-                file_content = await doc_processor.get_file_content(document.file_path)
-                
-                if not file_content:
-                    raise Exception(f"Failed to read file: {document.file_path}")
-                
-                logger.info(f"File read successfully, size: {len(file_content)} bytes")
-                
-                # Extract specifications with Gemini
-                logger.info(f"Calling Gemini API for document {document_id}")
-                extracted_data = await ai_service.extract_document_specifications(
+    try:
+        # Get document from database
+        document = db.query(Document).filter(Document.id == document_id).first()
+        
+        if not document:
+            logger.error(f"Document {document_id} not found")
+            return
+        
+        logger.info(f"Starting extraction for document {document_id}: {document.filename}")
+        
+        # Update status to processing
+        document.extraction_status = "processing"
+        db.commit()
+        
+        # Initialize services (import here to avoid circular imports)
+        from app.services.ai_service import AIService
+        from app.services.document_processor import DocumentProcessor
+        import asyncio
+        
+        ai_service = AIService()
+        doc_processor = DocumentProcessor()
+        
+        # Read file content (this is async, so we need to run it in event loop)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        try:
+            file_content = loop.run_until_complete(
+                doc_processor.get_file_content(document.file_path)
+            )
+            
+            if not file_content:
+                raise Exception(f"Failed to read file: {document.file_path}")
+            
+            logger.info(f"File read successfully, size: {len(file_content)} bytes")
+            
+            # Extract specifications with Gemini
+            logger.info(f"Calling Gemini API for document {document_id}")
+            extracted_data = loop.run_until_complete(
+                ai_service.extract_document_specifications(
                     document_content=file_content,
                     filename=document.original_filename,
                     mime_type=document.mime_type
                 )
-                
-                logger.info(f"Gemini extraction completed for document {document_id}")
-                
-                # Update document with extracted data
-                stmt = (
-                    update(Document)
-                    .where(Document.id == document_id)
-                    .values(
-                        extracted_json=extracted_data,
-                        extraction_status="completed",
-                        extraction_model="gemini-1.5-flash",
-                        extracted_at=func.now()
-                    )
-                )
-                await db.execute(stmt)
-                await db.commit()
-                
-                logger.info(f"Document {document_id} extraction completed successfully")
-                
-            except Exception as e:
-                logger.error(f"Error processing document {document_id}: {str(e)}", exc_info=True)
-                
-                # Update status to failed
-                stmt = (
-                    update(Document)
-                    .where(Document.id == document_id)
-                    .values(
-                        extraction_status="failed",
-                        extraction_error=str(e)
-                    )
-                )
-                await db.execute(stmt)
-                await db.commit()
-                
-                # Retry the task if not max retries
-                if self.request.retries < self.max_retries:
-                    logger.info(f"Retrying document {document_id} processing...")
-                    raise self.retry(exc=e, countdown=60)  # Retry after 60 seconds
-    
-    # Run the async function
-    asyncio.run(_process())
+            )
+            
+            logger.info(f"Gemini extraction completed for document {document_id}")
+            
+            # Update document with extracted data
+            document.extracted_json = extracted_data
+            document.extraction_status = "completed"
+            document.extraction_model = "gemini-1.5-flash"
+            document.extracted_at = func.now()
+            
+            db.commit()
+            
+            logger.info(f"Document {document_id} extraction completed successfully")
+            
+        finally:
+            loop.close()
+        
+    except Exception as e:
+        logger.error(f"Error processing document {document_id}: {str(e)}", exc_info=True)
+        
+        try:
+            # Update status to failed
+            document = db.query(Document).filter(Document.id == document_id).first()
+            if document:
+                document.extraction_status = "failed"
+                document.extraction_error = str(e)[:1000]  # Truncate error message
+                db.commit()
+        except Exception as db_error:
+            logger.error(f"Failed to update error status: {db_error}")
+        
+        # Retry the task if not max retries
+        if self.request.retries < self.max_retries:
+            logger.info(f"Retrying document {document_id} processing...")
+            raise self.retry(exc=e, countdown=60)  # Retry after 60 seconds
+        
+    finally:
+        db.close()
 
 
 @celery_app.task(name="tasks.health_check")
