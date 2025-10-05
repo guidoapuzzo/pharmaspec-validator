@@ -386,7 +386,7 @@ async def get_project_statistics(
         }
     }
 
-@router.post("/{project_id}/documents")
+@router.post("/{project_id}/documents", response_model=DocumentSchema)
 async def upload_document(
     project_id: int,
     request: Request,
@@ -395,10 +395,9 @@ async def upload_document(
     db: AsyncSession = Depends(get_db),
     _: bool = Depends(verify_project_access)
 ) -> Any:
-    """Upload a document for the project"""
+    """Upload a document and trigger async processing"""
     from app.services.document_processor import DocumentProcessor
     from app.models.document import Document
-    import hashlib
     
     # Validate file
     processor = DocumentProcessor()
@@ -460,4 +459,44 @@ async def upload_document(
         db=db
     )
     
+    # Trigger background processing
+    from app.tasks import process_document_task
+    task = process_document_task.delay(document.id)
+    
+    logger.info(f"Queued document {document.id} for processing, task_id: {task.id}")
+    
     return document
+
+@router.get("/{project_id}/documents/{document_id}/status")
+async def get_document_status(
+    project_id: int,
+    document_id: int,
+    current_user: User = Security(get_current_user, scopes=["engineer"]),
+    db: AsyncSession = Depends(get_db),
+    _: bool = Depends(verify_project_access)
+) -> Any:
+    """Get document processing status"""
+    
+    stmt = select(Document).where(
+        Document.id == document_id,
+        Document.project_id == project_id,
+        Document.deleted_at.is_(None)
+    )
+    result = await db.execute(stmt)
+    document = result.scalar_one_or_none()
+    
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+    
+    return {
+        "id": document.id,
+        "filename": document.original_filename,
+        "extraction_status": document.extraction_status,
+        "extraction_model": document.extraction_model,
+        "extracted_at": document.extracted_at.isoformat() if document.extracted_at else None,
+        "extraction_error": document.extraction_error,
+        "has_extracted_data": document.extracted_json is not None
+    }
