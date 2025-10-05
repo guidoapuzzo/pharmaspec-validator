@@ -12,8 +12,9 @@ interface UploadDocumentsModalProps {
 interface UploadedFile {
   file: File;
   progress: number;
-  status: 'pending' | 'uploading' | 'success' | 'error';
+  status: 'pending' | 'uploading' | 'processing' | 'success' | 'error';
   error?: string;
+  documentId?: number;
 }
 
 export default function UploadDocumentsModal({ 
@@ -62,6 +63,70 @@ export default function UploadDocumentsModal({
     fileInputRef.current?.click();
   };
 
+  const pollDocumentStatus = async (documentId: number, fileIndex: number): Promise<void> => {
+    const maxAttempts = 60; // Poll for up to 5 minutes (60 * 5 seconds)
+    let attempts = 0;
+    
+    const poll = async (): Promise<void> => {
+      try {
+        const response = await fetch(
+          `http://localhost:8000/api/v1/projects/${projectId}/documents/${documentId}/status`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            },
+          }
+        );
+        
+        if (response.ok) {
+          const status = await response.json();
+          
+          if (status.extraction_status === 'completed') {
+            setFiles(prev => prev.map((f, idx) => 
+              idx === fileIndex ? { ...f, status: 'success' as const, progress: 100 } : f
+            ));
+            return;
+          } else if (status.extraction_status === 'failed') {
+            setFiles(prev => prev.map((f, idx) => 
+              idx === fileIndex ? { 
+                ...f, 
+                status: 'error' as const, 
+                error: status.extraction_error || 'Processing failed'
+              } : f
+            ));
+            return;
+          }
+        }
+        
+        attempts++;
+        if (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+          return poll();
+        } else {
+          // Timeout
+          setFiles(prev => prev.map((f, idx) => 
+            idx === fileIndex ? { 
+              ...f, 
+              status: 'error' as const, 
+              error: 'Processing timeout'
+            } : f
+          ));
+        }
+      } catch (error) {
+        console.error('Error polling status:', error);
+        setFiles(prev => prev.map((f, idx) => 
+          idx === fileIndex ? { 
+            ...f, 
+            status: 'error' as const, 
+            error: 'Status check failed'
+          } : f
+        ));
+      }
+    };
+    
+    return poll();
+  };
+
   const handleUpload = async () => {
     if (files.length === 0) {
       alert('Please select files to upload');
@@ -69,6 +134,7 @@ export default function UploadDocumentsModal({
     }
 
     setIsUploading(true);
+    let allSuccessful = true;
 
     try {
       // Upload each file
@@ -99,11 +165,24 @@ export default function UploadDocumentsModal({
             throw new Error('Upload failed');
           }
 
-          // Update status to success
+          const data = await response.json();
+          
+          // Update status to processing and store document ID
           setFiles(prev => prev.map((f, idx) => 
-            idx === i ? { ...f, status: 'success' as const, progress: 100 } : f
+            idx === i ? { 
+              ...f, 
+              status: 'processing' as const, 
+              progress: 50,
+              documentId: data.id 
+            } : f
           ));
+
+          // Start polling for processing completion
+          console.log(`Document ${data.id} uploaded, processing in background...`);
+          pollDocumentStatus(data.id, i);
+          
         } catch (error) {
+          allSuccessful = false;
           // Update status to error
           setFiles(prev => prev.map((f, idx) => 
             idx === i ? { 
@@ -115,27 +194,22 @@ export default function UploadDocumentsModal({
         }
       }
 
-      // Check if all uploads were successful
-      const allSuccess = files.every(f => f.status === 'success');
-      
-      if (allSuccess && onSuccess) {
+      // Call success callback if all uploaded (even if still processing)
+      if (allSuccessful && onSuccess) {
         onSuccess();
       }
-
-      // Close modal after a delay if all successful
-      if (allSuccess) {
-        setTimeout(() => {
-          handleClose();
-        }, 1500);
-      }
+      
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleClose = () => {
-    setFiles([]);
-    onClose();
+    // Only allow close if not uploading
+    if (!isUploading) {
+      setFiles([]);
+      onClose();
+    }
   };
 
   const handleRemoveFile = (index: number) => {
@@ -150,6 +224,36 @@ export default function UploadDocumentsModal({
     return '📎';
   };
 
+  const getStatusIcon = (status: UploadedFile['status']) => {
+    switch (status) {
+      case 'pending':
+        return null;
+      case 'uploading':
+        return <span className="text-blue-600">⏳</span>;
+      case 'processing':
+        return <span className="text-yellow-600">⚙️</span>;
+      case 'success':
+        return <span className="text-green-600">✓</span>;
+      case 'error':
+        return <span className="text-red-600">⚠️</span>;
+    }
+  };
+
+  const getStatusText = (status: UploadedFile['status']) => {
+    switch (status) {
+      case 'pending':
+        return 'Ready';
+      case 'uploading':
+        return 'Uploading...';
+      case 'processing':
+        return 'Processing with AI...';
+      case 'success':
+        return 'Complete';
+      case 'error':
+        return 'Failed';
+    }
+  };
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -158,10 +262,13 @@ export default function UploadDocumentsModal({
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  const canClose = !isUploading;
+  const hasProcessingFiles = files.some(f => f.status === 'processing');
+
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={canClose ? handleClose : () => {}}
       title="Upload Documents"
       size="lg"
     >
@@ -174,6 +281,7 @@ export default function UploadDocumentsModal({
           accept=".pdf,.docx,.xlsx"
           onChange={handleFileSelect}
           className="hidden"
+          disabled={isUploading}
         />
 
         {/* Drop zone */}
@@ -212,12 +320,24 @@ export default function UploadDocumentsModal({
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {uploadFile.file.name}
                       </p>
-                      <p className="text-xs text-gray-500">
-                        {formatFileSize(uploadFile.file.size)}
-                      </p>
+                      <div className="flex items-center space-x-2">
+                        <p className="text-xs text-gray-500">
+                          {formatFileSize(uploadFile.file.size)}
+                        </p>
+                        <span className="text-xs text-gray-400">•</span>
+                        <p className="text-xs text-gray-500">
+                          {getStatusText(uploadFile.status)}
+                        </p>
+                      </div>
+                      {uploadFile.error && (
+                        <p className="text-xs text-red-600 mt-1" title={uploadFile.error}>
+                          {uploadFile.error}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
+                    {getStatusIcon(uploadFile.status)}
                     {uploadFile.status === 'pending' && (
                       <button
                         onClick={() => handleRemoveFile(index)}
@@ -227,20 +347,26 @@ export default function UploadDocumentsModal({
                         ✕
                       </button>
                     )}
-                    {uploadFile.status === 'uploading' && (
-                      <span className="text-blue-600">⏳</span>
-                    )}
-                    {uploadFile.status === 'success' && (
-                      <span className="text-green-600">✓</span>
-                    )}
-                    {uploadFile.status === 'error' && (
-                      <span className="text-red-600" title={uploadFile.error}>
-                        ⚠️
-                      </span>
-                    )}
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Processing notice */}
+        {hasProcessingFiles && (
+          <div className="rounded-md bg-blue-50 p-4">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <span className="text-blue-400">ℹ️</span>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">Processing in Background</h3>
+                <div className="mt-2 text-sm text-blue-700">
+                  Documents are being processed by AI. This may take a few minutes. You can close this dialog and continue working.
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -261,9 +387,9 @@ export default function UploadDocumentsModal({
           <Button 
             variant="outline" 
             onClick={handleClose}
-            disabled={isUploading}
+            disabled={!canClose}
           >
-            Cancel
+            {hasProcessingFiles ? 'Close' : 'Cancel'}
           </Button>
           <Button 
             onClick={handleUpload}
