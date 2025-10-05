@@ -1,4 +1,5 @@
 from app.core.config import settings
+from app.schemas.document import Document as DocumentSchema
 from typing import List, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Security, Request, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +25,9 @@ from app.schemas.project import (
     ProjectSummary,
     ProjectWithOwner
 )
+import logging
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
