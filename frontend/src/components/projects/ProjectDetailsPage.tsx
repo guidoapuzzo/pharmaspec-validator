@@ -259,50 +259,15 @@ export default function ProjectDetailsPage() {
       </Card>
 
       {/* Upload Modal */}
-      <Modal
+      <UploadDocumentsModal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
-        title="Upload Documents"
-        size="lg"
-      >
-        <div className="space-y-6">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <div className="space-y-4">
-              <div className="mx-auto h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center">
-                <span className="text-2xl">📄</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Upload Specification Documents</h3>
-                <p className="mt-2 text-sm text-gray-500">
-                  Upload PDF documents containing supplier specifications
-                </p>
-              </div>
-              <div>
-                <Button>Choose Files</Button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="text-sm text-gray-500">
-            <p className="font-medium mb-2">Supported formats:</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>PDF documents (.pdf)</li>
-              <li>Word documents (.docx)</li>
-              <li>Excel spreadsheets (.xlsx)</li>
-              <li>Maximum file size: 50MB per file</li>
-            </ul>
-          </div>
-
-          <div className="flex justify-end space-x-3">
-            <Button variant="outline" onClick={() => setShowUploadModal(false)}>
-              Cancel
-            </Button>
-            <Button disabled>
-              Process Documents
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        projectId={parseInt(id)}
+        onSuccess={() => {
+          // Refresh project data after successful upload
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }
