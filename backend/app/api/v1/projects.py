@@ -1,3 +1,4 @@
+from app.core.config import settings
 from typing import List, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Security, Request, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
