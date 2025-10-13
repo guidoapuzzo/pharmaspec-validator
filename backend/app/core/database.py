@@ -54,11 +54,11 @@ async def get_db() -> AsyncSession:
 
 async def create_tables():
     """Create all tables in the database"""
-    from app.models import user, project, document, requirement, matrix, audit_log
-    
+    from app.models import user, project, document, requirement, matrix, audit_log, project_access
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     logger.info("Database tables created successfully")
 
 

@@ -1,7 +1,6 @@
 from datetime import datetime
 from typing import Optional, Dict, Any
-from pydantic import BaseModel, Field
-
+from pydantic import BaseModel, Field, ConfigDict
 
 class DocumentBase(BaseModel):
     filename: str = Field(..., description="Original filename of the uploaded document")
@@ -12,11 +11,9 @@ class DocumentBase(BaseModel):
     file_hash: str = Field(..., description="SHA-256 hash for integrity verification")
     extraction_status: str = Field(..., description="Status of AI extraction process")
 
-
 class DocumentCreate(DocumentBase):
     """Schema for creating a new document"""
     pass
-
 
 class DocumentUpdate(BaseModel):
     """Schema for updating document metadata"""
@@ -25,15 +22,12 @@ class DocumentUpdate(BaseModel):
     extracted_data: Optional[Dict[str, Any]] = Field(None, description="Extracted JSON data from Gemini API")
     processing_notes: Optional[str] = Field(None, description="Processing notes or error messages")
 
-
 class Document(DocumentBase):
     """Schema for document response"""
     id: int
     project_id: int
-    extracted_data: Optional[Dict[str, Any]] = Field(None, description="Extracted JSON data from Gemini API")
-    processing_notes: Optional[str] = Field(None, description="Processing notes or error messages")
+    extracted_json: Optional[Dict[str, Any]] = None  # Changed from extracted_data to match model
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None  # Make optional since it can be None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)  # Pydantic v2 syntax

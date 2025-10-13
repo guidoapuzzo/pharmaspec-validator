@@ -58,10 +58,15 @@ class User(Base):
     )
     matrix_entries_modified = relationship(
         "MatrixEntry",
-        back_populates="last_modified_by_user", 
+        back_populates="last_modified_by_user",
         foreign_keys="[MatrixEntry.last_modified_by]"
     )
-    
+    project_accesses = relationship(
+        "ProjectAccess",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}', role='{self.role}')>"
     

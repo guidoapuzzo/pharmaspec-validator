@@ -15,7 +15,11 @@ export default function Layout({ children }: LayoutProps) {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: '📊' },
     { name: 'Projects', href: '/dashboard', icon: '📁' },
-    ...(isAdmin ? [{ name: 'Audit Trail', href: '/audit', icon: '📋' }] : []),
+    { name: 'Archives', href: '/archives', icon: '📦' },
+    ...(isAdmin ? [
+      { name: 'User Management', href: '/users', icon: '👥' },
+      { name: 'Audit Trail', href: '/audit', icon: '📋' }
+    ] : []),
   ];
 
   const isActive = (href: string) => {

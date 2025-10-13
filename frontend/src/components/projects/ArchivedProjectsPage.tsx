@@ -2,9 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/common/Card';
-import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
-import CreateProjectModal from '@/components/projects/CreateProjectModal';
 
 interface ProjectSummary {
   id: number;
@@ -21,14 +19,12 @@ interface ProjectSummary {
   completion_percentage: number;
 }
 
-export default function DashboardPage() {
+export default function ArchivedProjectsPage() {
   const { user } = useAuth();
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [allProjects, setAllProjects] = useState<ProjectSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterOwner, setFilterOwner] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -37,7 +33,8 @@ export default function DashboardPage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('http://localhost:8000/api/v1/projects/', {
+      // Fetch only archived projects
+      const response = await fetch('http://localhost:8000/api/v1/projects/?status=archived', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           'Content-Type': 'application/json',
@@ -45,17 +42,15 @@ export default function DashboardPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch projects');
+        throw new Error('Failed to fetch archived projects');
       }
 
       const data = await response.json();
-      // Exclude archived projects from main dashboard
-      const nonArchivedProjects = data.filter((p: ProjectSummary) => p.status !== 'archived');
-      setAllProjects(nonArchivedProjects);
-      setProjects(nonArchivedProjects);
+      setAllProjects(data);
+      setProjects(data);
     } catch (error) {
-      console.error('Error fetching projects:', error);
-      setError('Failed to load projects. Please try again.');
+      console.error('Error fetching archived projects:', error);
+      setError('Failed to load archived projects. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -68,11 +63,6 @@ export default function DashboardPage() {
   // Apply filters whenever filter state or search query changes
   useEffect(() => {
     let filtered = [...allProjects];
-
-    // Filter by status
-    if (filterStatus !== 'all') {
-      filtered = filtered.filter(p => p.status === filterStatus);
-    }
 
     // Filter by owner
     if (filterOwner !== 'all') {
@@ -90,28 +80,12 @@ export default function DashboardPage() {
     }
 
     setProjects(filtered);
-  }, [allProjects, filterStatus, filterOwner, searchQuery]);
+  }, [allProjects, filterOwner, searchQuery]);
 
   // Get unique owners for filter dropdown
   const uniqueOwners = Array.from(
     new Map(allProjects.map(p => [p.owner_id, { id: p.owner_id, name: p.owner_name }])).values()
   );
-
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      active: { color: 'bg-green-100 text-green-800', label: 'Active' },
-      completed: { color: 'bg-blue-100 text-blue-800', label: 'Completed' },
-      archived: { color: 'bg-gray-100 text-gray-800', label: 'Archived' },
-    };
-
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.active;
-
-    return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.color}`}>
-        {config.label}
-      </span>
-    );
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -119,11 +93,6 @@ export default function DashboardPage() {
       month: 'short',
       day: 'numeric',
     });
-  };
-
-  const handleCreateSuccess = () => {
-    // Refresh projects list
-    fetchProjects();
   };
 
   if (isLoading) {
@@ -140,25 +109,18 @@ export default function DashboardPage() {
       <div className="md:flex md:items-center md:justify-between">
         <div className="flex-1 min-w-0">
           <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-            {user?.role === 'admin' ? 'Admin Dashboard' : 'Dashboard'}
+            📦 Archived Projects
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Welcome back, {user?.full_name}. {user?.role === 'admin' ? 'Monitor company projects and audit trails.' : 'Manage your CSV validation projects.'}
+            View and access projects that have been archived
           </p>
-        </div>
-        <div className="mt-4 flex md:mt-0 md:ml-4">
-          {user?.role !== 'admin' && (
-            <Button onClick={() => setShowCreateModal(true)}>
-              Create New Project
-            </Button>
-          )}
         </div>
       </div>
 
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search */}
             <div>
               <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
@@ -172,23 +134,6 @@ export default function DashboardPage() {
                 placeholder="Search by name, description, or owner..."
                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-pharma-500 focus:ring-pharma-500 sm:text-sm px-3 py-2 border text-gray-900"
               />
-            </div>
-
-            {/* Status Filter */}
-            <div>
-              <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-1">
-                Filter by Status
-              </label>
-              <select
-                id="status-filter"
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-pharma-500 focus:ring-pharma-500 sm:text-sm px-3 py-2 border text-gray-900"
-              >
-                <option value="all">All Statuses</option>
-                <option value="active">Active</option>
-                <option value="completed">Completed</option>
-              </select>
             </div>
 
             {/* Owner Filter */}
@@ -214,65 +159,25 @@ export default function DashboardPage() {
 
           {/* Results count */}
           <div className="mt-3 text-sm text-gray-600">
-            Showing {projects.length} of {allProjects.length} projects
+            Showing {projects.length} archived {projects.length === 1 ? 'project' : 'projects'}
           </div>
         </CardContent>
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-pharma-500 rounded-md flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">📊</span>
+                <div className="w-8 h-8 bg-gray-500 rounded-md flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">📦</span>
                 </div>
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Projects</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Total Archived</dt>
                   <dd className="text-lg font-medium text-gray-900">{allProjects.length}</dd>
-                </dl>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">✅</span>
-                </div>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Active Projects</dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    {allProjects.filter(p => p.status === 'active').length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                  <span className="text-white text-sm font-medium">🎯</span>
-                </div>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Completed Projects</dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    {allProjects.filter(p => p.status === 'completed').length}
-                  </dd>
                 </dl>
               </div>
             </div>
@@ -285,6 +190,26 @@ export default function DashboardPage() {
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
                   <span className="text-white text-sm font-medium">📋</span>
+                </div>
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Total Documents</dt>
+                  <dd className="text-lg font-medium text-gray-900">
+                    {allProjects.reduce((sum, p) => sum + p.documents_count, 0)}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">✓</span>
                 </div>
               </div>
               <div className="ml-5 w-0 flex-1">
@@ -302,8 +227,8 @@ export default function DashboardPage() {
 
       {/* Projects List */}
       <div className="space-y-6">
-        <h3 className="text-lg font-medium text-gray-900">Recent Projects</h3>
-        
+        <h3 className="text-lg font-medium text-gray-900">Archived Projects</h3>
+
         {error && (
           <div className="rounded-md bg-red-50 p-4">
             <div className="flex">
@@ -322,21 +247,16 @@ export default function DashboardPage() {
           <Card>
             <CardContent className="text-center py-12">
               <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <span className="text-2xl">📁</span>
+                <span className="text-2xl">📦</span>
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {allProjects.length === 0 ? 'No projects yet' : 'No projects match your filters'}
+                {allProjects.length === 0 ? 'No archived projects' : 'No projects match your filters'}
               </h3>
               <p className="text-gray-500 mb-6">
                 {allProjects.length === 0
-                  ? (user?.role === 'admin'
-                    ? 'No projects have been created by engineers yet.'
-                    : 'Get started by creating your first CSV validation project.')
+                  ? 'Projects that are archived will appear here.'
                   : 'Try adjusting your search or filter criteria.'}
               </p>
-              {user?.role !== 'admin' && allProjects.length === 0 && (
-                <Button onClick={() => setShowCreateModal(true)}>Create Your First Project</Button>
-              )}
             </CardContent>
           </Card>
         ) : (
@@ -353,7 +273,9 @@ export default function DashboardPage() {
                         >
                           {project.name}
                         </Link>
-                        {getStatusBadge(project.status)}
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          Archived
+                        </span>
                       </div>
                       <p className="mt-2 text-sm text-gray-600 line-clamp-2">
                         {project.description}
@@ -378,7 +300,9 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex space-x-2">
                       <Link to={`/projects/${project.id}`}>
-                        <Button variant="outline" size="sm">View Details</Button>
+                        <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                          View Details
+                        </button>
                       </Link>
                     </div>
                   </div>
@@ -388,13 +312,6 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
-
-      {/* Create Project Modal */}
-      <CreateProjectModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSuccess={handleCreateSuccess}
-      />
     </div>
   );
 }

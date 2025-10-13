@@ -11,7 +11,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
 from app.core.database import create_tables
 from app.core.seed import seed_database
-from app.api.v1 import auth, projects
+from app.api.v1 import api_router
 
 # Configure logging
 logging.basicConfig(
@@ -56,21 +56,20 @@ def create_application() -> FastAPI:
         lifespan=lifespan
     )
     
-    # Add security middleware as recommended in FastAPI Context7 docs
+    # Add CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.BACKEND_CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    logger.info(f"CORS enabled for origins: {settings.BACKEND_CORS_ORIGINS}")
+
     app.add_middleware(
         TrustedHostMiddleware,
         allowed_hosts=["localhost", "127.0.0.1", "*.pharmaspec.local"]
     )
-    
-    # Add CORS middleware
-    if settings.BACKEND_CORS_ORIGINS:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
     
     # Add custom middleware for audit logging
     @app.middleware("http")
@@ -153,16 +152,7 @@ def create_application() -> FastAPI:
         }
     
     # Include API routers
-    app.include_router(
-        auth.router,
-        prefix=f"{settings.API_V1_STR}/auth",
-        tags=["authentication"]
-    )
-    app.include_router(
-        projects.router,
-        prefix=f"{settings.API_V1_STR}/projects",
-        tags=["projects"]
-    )
+    app.include_router(api_router, prefix=settings.API_V1_STR)
     
     return app
 

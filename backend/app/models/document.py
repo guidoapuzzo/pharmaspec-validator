@@ -41,6 +41,7 @@ class Document(Base):
     
     # Relationships
     project = relationship("Project", back_populates="documents")
+    matrix_entries = relationship("MatrixEntry", back_populates="document")
     
     def __repr__(self):
         return f"<Document(id={self.id}, filename='{self.filename}', project_id={self.project_id})>"

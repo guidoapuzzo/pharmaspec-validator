@@ -377,37 +377,48 @@ class MatrixGenerator:
         self, documents: List[Document]
     ) -> Dict[str, Any]:
         """Combine extracted specifications from multiple documents"""
-        
+
+        logger.info(f"_combine_document_specifications called with {len(documents)} documents")
+
         combined = {
-            "system_specifications": [],
-            "functional_requirements": [],
-            "technical_details": [],
-            "compliance_information": [],
-            "interfaces_integrations": [],
-            "security_features": [],
+            "documents": [],
             "document_sources": []
         }
-        
+
         for doc in documents:
+            logger.info(f"Processing document {doc.id}: {doc.original_filename}")
+            logger.info(f"  has extracted_json: {doc.extracted_json is not None}")
+
             if not doc.extracted_json:
+                logger.warning(f"  Document {doc.id} has no extracted_json, skipping")
                 continue
-                
-            # Add document source info
+
+            logger.info(f"  document_info: {doc.extracted_json.get('document_info', {})}")
+            sections_count = len(doc.extracted_json.get('sections', []))
+            logger.info(f"  sections count: {sections_count}")
+
+            if sections_count > 0:
+                first_section_preview = str(doc.extracted_json['sections'][0])[:200]
+                logger.info(f"  First section preview: {first_section_preview}")
+
+            # Add full extracted document with actual content
+            combined["documents"].append({
+                "filename": doc.original_filename,
+                "document_info": doc.extracted_json.get("document_info", {}),
+                "sections": doc.extracted_json.get("sections", []),
+                "extraction_metadata": doc.extracted_json.get("extraction_metadata", {})
+            })
+
+            # Add source tracking
             combined["document_sources"].append({
                 "document_id": doc.id,
-                "filename": doc.filename,
+                "filename": doc.original_filename,
                 "extraction_model": doc.extraction_model,
                 "extracted_at": str(doc.extracted_at) if doc.extracted_at else None
             })
-            
-            # Merge specifications from this document
-            for category in combined.keys():
-                if category == "document_sources":
-                    continue
-                    
-                if category in doc.extracted_json:
-                    items = doc.extracted_json[category]
-                    if isinstance(items, list):
-                        combined[category].extend(items)
-        
+
+        logger.info(f"Returning combined specs with {len(combined['documents'])} documents")
+        if len(combined['documents']) == 0:
+            logger.error("WARNING: No documents in combined specs! Llama will have nothing to reference.")
+
         return combined

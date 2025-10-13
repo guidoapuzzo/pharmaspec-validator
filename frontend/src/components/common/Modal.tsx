@@ -53,12 +53,13 @@ export default function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black bg-opacity-50 overflow-y-auto"
       onClick={handleBackdropClick}
     >
       <div
         className={cn(
-          'relative w-full bg-white rounded-lg shadow-xl',
+          'relative w-full bg-white rounded-lg shadow-xl flex flex-col my-8',
+          'max-h-[calc(100vh-4rem)]',
           sizeClasses[size]
         )}
         role="dialog"
@@ -67,7 +68,7 @@ export default function Modal({
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
             {title && (
               <h3 id="modal-title" className="text-lg font-semibold text-gray-900">
                 {title}
@@ -98,7 +99,7 @@ export default function Modal({
         )}
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto flex-1">
           {children}
         </div>
       </div>

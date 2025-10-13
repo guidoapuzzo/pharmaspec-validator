@@ -110,31 +110,101 @@ async def verify_project_access(
     db: AsyncSession = Depends(get_db)
 ) -> bool:
     """
-    Verify that current user has access to the project
-    Implements data isolation for GxP compliance
+    Verify that current user has read access to the project
+    - Admins: Can view all projects (bypass password)
+    - Project owner: Can view their own projects (bypass password)
+    - Other engineers: Need to verify password if project is protected
+    Implements collaborative access with optional password protection
     """
     from app.models.project import Project
+    from app.models.project_access import ProjectAccess
     from app.models.user import UserRole
-    
-    # Admin users can access all projects
-    if current_user.role == UserRole.ADMIN:
-        return True
-    
-    # Check if user owns the project
+
+    # Get project and check if it exists
     stmt = select(Project).where(
         Project.id == project_id,
-        Project.owner_id == current_user.id,
         Project.deleted_at.is_(None)
     )
     result = await db.execute(stmt)
     project = result.scalar_one_or_none()
-    
+
     if project is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found or access denied"
+            detail="Project not found"
         )
-    
+
+    # Admins can access all projects (oversight)
+    if current_user.role == UserRole.ADMIN:
+        return True
+
+    # Owner can always access their own project
+    if project.owner_id == current_user.id:
+        return True
+
+    # If no password protection, allow access
+    if not project.password_hash:
+        return True
+
+    # Check if user has verified password before
+    access_stmt = select(ProjectAccess).where(
+        and_(
+            ProjectAccess.user_id == current_user.id,
+            ProjectAccess.project_id == project_id
+        )
+    )
+    access_result = await db.execute(access_stmt)
+    project_access = access_result.scalar_one_or_none()
+
+    if project_access:
+        return True
+
+    # Password required but not verified
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="password_required",
+        headers={"X-Project-Protected": "true"}
+    )
+
+    return True
+
+
+async def verify_project_write_access(
+    project_id: int,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+) -> bool:
+    """
+    Verify that current user has write access to the project
+    - Admins: Read-only access (cannot modify)
+    - Engineers: Can modify all projects
+    Implements admin oversight with read-only constraints
+    """
+    from app.models.project import Project
+    from app.models.user import UserRole
+
+    # Verify project exists first
+    stmt = select(Project).where(
+        Project.id == project_id,
+        Project.deleted_at.is_(None)
+    )
+    result = await db.execute(stmt)
+    project = result.scalar_one_or_none()
+
+    if project is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+
+    # Admins have read-only access
+    if current_user.role == UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admins have read-only access. Only engineers can modify projects."
+        )
+
+    # Engineers can modify all projects
     return True
 
 

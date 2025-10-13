@@ -1,35 +1,35 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class RequirementBase(BaseModel):
-    requirement_text: str = Field(..., min_length=1, description="The requirement description text")
-    requirement_category: str = Field(..., description="Category of the requirement (e.g., Functional, Performance)")
-    priority: str = Field(default="medium", description="Priority level: low, medium, high, critical")
-    source_section: Optional[str] = Field(None, description="Section reference in source document")
+    requirement_id: str = Field(..., min_length=1, max_length=50, description="User-defined requirement ID (e.g., REQ-001)")
+    description: str = Field(..., min_length=1, description="Requirement description text")
+    category: Optional[str] = Field(None, max_length=100, description="Category (e.g., Functional, Performance, Security)")
+    priority: str = Field(default="medium", description="Priority: low, medium, high")
+    status: str = Field(default="pending", description="Status: pending, in_progress, completed")
 
 
 class RequirementCreate(RequirementBase):
     """Schema for creating a new requirement"""
-    document_id: int = Field(..., description="ID of the source document")
+    pass
 
 
 class RequirementUpdate(BaseModel):
     """Schema for updating requirement details"""
-    requirement_text: Optional[str] = Field(None, min_length=1, description="Updated requirement text")
-    requirement_category: Optional[str] = Field(None, description="Updated requirement category")
-    priority: Optional[str] = Field(None, description="Updated priority level")
-    source_section: Optional[str] = Field(None, description="Updated source section reference")
+    requirement_id: Optional[str] = Field(None, min_length=1, max_length=50)
+    description: Optional[str] = Field(None, min_length=1)
+    category: Optional[str] = Field(None, max_length=100)
+    priority: Optional[str] = Field(None)
+    status: Optional[str] = Field(None)
 
 
 class Requirement(RequirementBase):
     """Schema for requirement response"""
     id: int
-    document_id: int
     project_id: int
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

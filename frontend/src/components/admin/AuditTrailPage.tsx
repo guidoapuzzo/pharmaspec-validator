@@ -50,7 +50,7 @@ export default function AuditTrailPage() {
           }
         });
 
-        const response = await fetch(`/api/v1/admin/audit-logs?${searchParams}`, {
+        const response = await fetch(`http://localhost:8000/api/v1/audit/?${searchParams}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json',
@@ -129,7 +129,9 @@ export default function AuditTrailPage() {
     });
   };
 
-  const exportLogs = async () => {
+  // Export functionality disabled - backend endpoint not yet implemented
+  // TODO: Add backend endpoint at /api/v1/audit/export for CSV export
+  /* const exportLogs = async () => {
     try {
       const searchParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
@@ -138,7 +140,7 @@ export default function AuditTrailPage() {
         }
       });
 
-      const response = await fetch(`/api/v1/admin/audit-logs/export?${searchParams}`, {
+      const response = await fetch(`http://localhost:8000/api/v1/audit/export?${searchParams}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
@@ -161,7 +163,7 @@ export default function AuditTrailPage() {
       console.error('Error exporting logs:', error);
       alert('Failed to export audit logs');
     }
-  };
+  }; */
 
   if (isLoading) {
     return (
@@ -183,11 +185,12 @@ export default function AuditTrailPage() {
             GxP compliant audit log for all system activities
           </p>
         </div>
-        <div className="mt-4 flex md:mt-0 md:ml-4">
+        {/* Export button disabled - backend endpoint not yet implemented */}
+        {/* <div className="mt-4 flex md:mt-0 md:ml-4">
           <Button onClick={exportLogs}>
             Export Logs
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Filters */}

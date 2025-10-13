@@ -49,7 +49,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       formData.append('username', credentials.username);
       formData.append('password', credentials.password);
 
-      const response = await fetch('/api/v1/auth/token', {
+      const response = await fetch('http://localhost:8000/api/v1/auth/token', {
         method: 'POST',
         body: formData,
       });
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       localStorage.setItem('refresh_token', data.refresh_token);
 
       // Fetch user data
-      const userResponse = await fetch('/api/v1/auth/me', {
+      const userResponse = await fetch('http://localhost:8000/api/v1/auth/me', {
         headers: {
           'Authorization': `Bearer ${data.access_token}`,
         },
@@ -113,8 +113,59 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setAuthState(prev => ({ ...prev, error: null }));
   }, []);
 
+  // Restore auth state from localStorage on mount
   useEffect(() => {
-    setAuthState(prev => ({ ...prev, isLoading: false }));
+    const restoreAuthState = async () => {
+      const token = localStorage.getItem('access_token');
+
+      if (!token) {
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      try {
+        // Verify token is valid by fetching user data
+        const userResponse = await fetch('http://localhost:8000/api/v1/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (!userResponse.ok) {
+          // Token is invalid, clear it
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          setAuthState({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+          return;
+        }
+
+        const userData = await userResponse.json();
+        setAuthState({
+          user: userData,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } catch (error) {
+        console.error('Error restoring auth state:', error);
+        // Clear invalid tokens
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        setAuthState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null,
+        });
+      }
+    };
+
+    restoreAuthState();
   }, []);
 
   const contextValue: AuthContextType = {

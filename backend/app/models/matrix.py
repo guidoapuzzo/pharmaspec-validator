@@ -14,9 +14,12 @@ class MatrixEntry(Base):
     __tablename__ = "matrix_entries"
 
     id = Column(Integer, primary_key=True, index=True)
-    
+
     # Requirement relationship
     requirement_id = Column(Integer, ForeignKey("requirements.id"), nullable=False, index=True)
+
+    # Document relationship - tracks which document this matrix entry was generated from
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=False, index=True)
     
     # Traceability Matrix fields
     spec_reference = Column(Text, nullable=True)  # Reference to supplier spec
@@ -58,14 +61,15 @@ class MatrixEntry(Base):
     
     # Relationships
     requirement = relationship("Requirement", back_populates="matrix_entries")
+    document = relationship("Document", back_populates="matrix_entries")
     created_by_user = relationship(
-        "User", 
+        "User",
         back_populates="matrix_entries_created",
         foreign_keys=[created_by]
     )
     last_modified_by_user = relationship(
         "User",
-        back_populates="matrix_entries_modified", 
+        back_populates="matrix_entries_modified",
         foreign_keys=[last_modified_by]
     )
     approved_by_user = relationship(

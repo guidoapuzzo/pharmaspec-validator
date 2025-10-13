@@ -28,7 +28,10 @@ class Project(Base):
     
     # Project status for workflow management
     status = Column(String(50), default="active", index=True)
-    
+
+    # Optional password protection for project access
+    password_hash = Column(Text, nullable=True)
+
     # Relationships
     owner = relationship("User", back_populates="projects")
     documents = relationship(
@@ -37,10 +40,15 @@ class Project(Base):
         cascade="all, delete-orphan"
     )
     requirements = relationship(
-        "Requirement", 
+        "Requirement",
         back_populates="project",
         cascade="all, delete-orphan"
     )
-    
+    access_records = relationship(
+        "ProjectAccess",
+        back_populates="project",
+        cascade="all, delete-orphan"
+    )
+
     def __repr__(self):
         return f"<Project(id={self.id}, name='{self.name}', owner_id={self.owner_id})>"
