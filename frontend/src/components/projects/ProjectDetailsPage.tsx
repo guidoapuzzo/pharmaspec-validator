@@ -104,7 +104,7 @@ export default function ProjectDetailsPage() {
   const [selectedDocumentForJson, setSelectedDocumentForJson] = useState<Document | null>(null);
   const [redirectToDashboard, setRedirectToDashboard] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
 
   // Check if user can edit (engineers can, admins cannot)
   const canEdit = user?.role !== 'admin';

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { usePermissions } from '@/hooks/usePermissions';
 import { Navigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/common/Card';
-import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 
 interface AuditLogEntry {
