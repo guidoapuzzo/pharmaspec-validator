@@ -225,7 +225,7 @@ if [ ${#MIGRATIONS[@]} -gt 0 ] && [ -f "${MIGRATIONS[0]}" ]; then
             for migration in "${MIGRATIONS[@]}"; do
                 if [ -f "$migration" ]; then
                     info "Applying: $(basename $migration)"
-                    if python3 run_migration.py "$migration" > /tmp/migration.log 2>&1; then
+                    if python3 scripts/run_migration.py "$migration" > /tmp/migration.log 2>&1; then
                         success "✓ $(basename $migration)"
                     else
                         error "Failed: $(basename $migration)"

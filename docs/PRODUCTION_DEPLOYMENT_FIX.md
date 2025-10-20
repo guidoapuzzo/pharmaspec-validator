@@ -103,7 +103,7 @@ cd /opt/pharmaspec-validator
 ls -la .env.production
 
 # If it doesn't exist, create it
-cp .env.production.template .env.production
+cp config/.env.production.template .env.production
 
 # Edit and fill in all REQUIRED values
 nano .env.production
@@ -281,7 +281,7 @@ Backend (FastAPI)
 cd /opt/pharmaspec-validator
 
 # Use rollback script
-./rollback.sh
+./scripts/rollback.sh
 
 # Select option 1 (Code only)
 # Or manually:
@@ -297,7 +297,7 @@ docker compose -f docker-compose.production.yml up -d --build
 - **SSL/HTTPS**: If not configured, follow `nginx/ssl/README.md` for self-signed certificates
 - **Backups**: Automated daily backups can be configured with cron (see DEPLOYMENT.md)
 - **Monitoring**: Check logs regularly: `docker compose -f docker-compose.production.yml logs -f`
-- **Updates**: For future updates, use `./deploy-production.sh` script
+- **Updates**: For future updates, use `./scripts/deploy-production.sh` script
 
 ---
 

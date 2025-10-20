@@ -16,7 +16,7 @@ git clone https://github.com/your-company/pharmaspec-validator.git
 cd pharmaspec-validator
 
 # Configure environment
-cp .env.production.template .env.production
+cp config/.env.production.template .env.production
 nano .env.production  # Fill in all REQUIRED values
 
 # Generate SSL certificate (self-signed for VPN)
@@ -48,7 +48,7 @@ git clone https://github.com/your-company/pharmaspec-validator.git
 cd pharmaspec-validator
 
 # Automated setup
-./dev-setup.sh
+./scripts/dev-setup.sh
 
 # OR manual setup
 cp .env.example .env
@@ -97,7 +97,7 @@ git checkout -b feature/my-feature
 
 # 3. Create migration (if database changes)
 nano backend/migrations/00X_description.sql
-python run_migration.py backend/migrations/00X_description.sql
+python scripts/run_migration.py backend/migrations/00X_description.sql
 
 # 4. Test locally
 # Visit http://localhost:5173 and test
@@ -122,7 +122,7 @@ git push origin main
 ```bash
 # On production server
 cd /opt/pharmaspec-validator
-./deploy-production.sh
+./scripts/deploy-production.sh
 ```
 
 ### Manual Deploy
@@ -132,7 +132,7 @@ cd /opt/pharmaspec-validator
 cd /opt/pharmaspec-validator
 
 # Backup
-./backup-production.sh
+./scripts/backup-production.sh
 
 # Update code
 git pull origin main
@@ -163,7 +163,7 @@ nano backend/migrations/003_add_new_field.sql
 # CREATE INDEX idx_projects_new_field ON projects(new_field);
 
 # Run locally first
-python run_migration.py backend/migrations/003_add_new_field.sql
+python scripts/run_migration.py backend/migrations/003_add_new_field.sql
 
 # Test thoroughly, then commit
 git add backend/migrations/003_add_new_field.sql
@@ -174,7 +174,7 @@ git commit -m "Add new_field to projects table"
 
 ```bash
 # Development
-python run_migration.py backend/migrations/00X_migration.sql
+python scripts/run_migration.py backend/migrations/00X_migration.sql
 
 # Production (SSH to server first)
 python3 run_migration.py backend/migrations/00X_migration.sql
@@ -188,7 +188,7 @@ python3 run_migration.py backend/migrations/00X_migration.sql
 
 ```bash
 # On production server
-./backup-production.sh
+./scripts/backup-production.sh
 
 # Backups saved to: /opt/backups/pharmaspec/backup_YYYYMMDD_HHMMSS.sql.gz
 ```
@@ -207,7 +207,7 @@ crontab -e
 
 ```bash
 # On production server
-./rollback.sh
+./scripts/rollback.sh
 # Select option 2 (Database only)
 # Choose backup file
 ```
@@ -221,7 +221,7 @@ crontab -e
 ```bash
 # On production server
 cd /opt/pharmaspec-validator
-./rollback.sh
+./scripts/rollback.sh
 
 # Options:
 # 1) Code only - rolls back git commits

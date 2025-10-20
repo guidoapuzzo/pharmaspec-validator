@@ -101,7 +101,7 @@ sudo ufw status
 
 ```bash
 # Copy the template
-cp .env.production.template .env.production
+cp config/.env.production.template .env.production
 
 # Edit the file with your settings
 nano .env.production
@@ -164,9 +164,9 @@ source venv/bin/activate
 pip install asyncpg python-dotenv
 
 # Run migrations
-python run_migration.py backend/init.sql
-python run_migration.py backend/migrations/001_initial_schema.sql
-python run_migration.py backend/migrations/002_add_document_id_to_matrix_entries.sql
+python scripts/run_migration.py backend/init.sql
+python scripts/run_migration.py backend/migrations/001_initial_schema.sql
+python scripts/run_migration.py backend/migrations/002_add_document_id_to_matrix_entries.sql
 
 # Deactivate virtual environment
 deactivate
@@ -419,7 +419,7 @@ sudo mkdir -p /opt/backups/pharmaspec
 sudo chown $USER:$USER /opt/backups/pharmaspec
 
 # Create backup script
-cat > /opt/pharmaspec-validator/backup.sh << 'EOF'
+cat > /opt/pharmaspec-validator/scripts/backup-production.sh << 'EOF'
 #!/bin/bash
 BACKUP_DIR="/opt/backups/pharmaspec"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
@@ -435,7 +435,7 @@ echo "Backup completed: backup_$TIMESTAMP.sql.gz"
 EOF
 
 # Make executable
-chmod +x /opt/pharmaspec-validator/backup.sh
+chmod +x /opt/pharmaspec-validator/scripts/backup-production.sh
 ```
 
 #### Schedule Daily Backups
@@ -445,7 +445,7 @@ chmod +x /opt/pharmaspec-validator/backup.sh
 crontab -e
 
 # Add daily backup at 2 AM
-0 2 * * * /opt/pharmaspec-validator/backup.sh >> /var/log/pharmaspec-backup.log 2>&1
+0 2 * * * /opt/pharmaspec-validator/scripts/backup-production.sh >> /var/log/pharmaspec-backup.log 2>&1
 ```
 
 #### Manual Backup
@@ -534,7 +534,7 @@ git pull origin main
 ls -la backend/migrations/
 
 # Run any new migrations
-python run_migration.py backend/migrations/003_new_migration.sql
+python scripts/run_migration.py backend/migrations/003_new_migration.sql
 ```
 
 ### Rebuild and Restart

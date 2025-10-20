@@ -110,7 +110,7 @@ cd pharmaspec-validator
 
 ```bash
 # Copy template
-cp .env.production.template .env.production
+cp config/.env.production.template .env.production
 
 # Edit the file
 nano .env.production
@@ -776,7 +776,7 @@ Use the deployment script:
 cd /opt/pharmaspec-validator
 
 # Run deployment script
-./deploy-production.sh
+./scripts/deploy-production.sh
 
 # This script will:
 # - Create backup
@@ -830,8 +830,8 @@ git pull origin main
 #### Step 4: Check for Configuration Changes
 
 ```bash
-# Check if .env.production.template changed
-git diff HEAD@{1} .env.production.template
+# Check if config/.env.production.template changed
+git diff HEAD@{1} config/.env.production.template
 
 # If changed, update your .env.production accordingly
 nano .env.production
