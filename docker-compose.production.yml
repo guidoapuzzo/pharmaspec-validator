@@ -86,6 +86,8 @@ services:
     restart: unless-stopped
     networks:
       - pharmaspec-network
+    healthcheck:
+      disable: true
 
   frontend:
     build:
