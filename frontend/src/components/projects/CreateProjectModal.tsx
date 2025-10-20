@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
+import { API_V1_URL } from '@/config/api';
 
 interface CreateProjectModalProps {
   isOpen: boolean;
@@ -62,7 +63,7 @@ export default function CreateProjectModal({ isOpen, onClose, onSuccess }: Creat
         })
       };
 
-      const response = await fetch('http://localhost:8000/api/v1/projects/', {
+      const response = await fetch(`${API_V1_URL}/projects/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,

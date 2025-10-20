@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
+import { API_V1_URL } from '@/config/api';
 
 interface EditProjectModalProps {
   isOpen: boolean;
@@ -55,7 +56,7 @@ export default function EditProjectModal({ isOpen, onClose, onSuccess, project }
     setError(null);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/projects/${project.id}`, {
+      const response = await fetch(`${API_V1_URL}/projects/${project.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,

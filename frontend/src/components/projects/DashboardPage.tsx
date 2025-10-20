@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import CreateProjectModal from '@/components/projects/CreateProjectModal';
+import { API_V1_URL } from '@/config/api';
 
 interface ProjectSummary {
   id: number;
@@ -37,7 +38,7 @@ export default function DashboardPage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('http://localhost:8000/api/v1/projects/', {
+      const response = await fetch(`${API_V1_URL}/projects/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           'Content-Type': 'application/json',

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
+import { API_V1_URL } from '@/config/api';
 
 interface PasswordPromptModalProps {
   isOpen: boolean;
@@ -34,7 +35,7 @@ export default function PasswordPromptModal({
     setError(null);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/projects/${projectId}/verify-password`, {
+      const response = await fetch(`${API_V1_URL}/projects/${projectId}/verify-password`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,

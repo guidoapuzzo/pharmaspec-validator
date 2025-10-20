@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
+import { API_V1_URL } from '@/config/api';
 
 interface EditMatrixEntryModalProps {
   isOpen: boolean;
@@ -85,7 +86,7 @@ export default function EditMatrixEntryModal({
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/v1/matrix/${entry.id}`,
+        `${API_V1_URL}/matrix/${entry.id}`,
         {
           method: 'PUT',
           headers: {

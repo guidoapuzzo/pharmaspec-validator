@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
+import { API_V1_URL } from '@/config/api';
 
 interface UploadDocumentsModalProps {
   isOpen: boolean;
@@ -70,7 +71,7 @@ export default function UploadDocumentsModal({
     const poll = async (): Promise<void> => {
       try {
         const response = await fetch(
-          `http://localhost:8000/api/v1/projects/${projectId}/documents/${documentId}/status`,
+          `${API_V1_URL}/projects/${projectId}/documents/${documentId}/status`,
           {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -151,7 +152,7 @@ export default function UploadDocumentsModal({
 
         try {
           const response = await fetch(
-            `http://localhost:8000/api/v1/projects/${projectId}/documents`,
+            `${API_V1_URL}/projects/${projectId}/documents`,
             {
               method: 'POST',
               headers: {

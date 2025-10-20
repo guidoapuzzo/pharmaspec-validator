@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
+import { API_V1_URL } from '@/config/api';
 
 interface AddRequirementModalProps {
   isOpen: boolean;
@@ -39,7 +40,7 @@ export default function AddRequirementModal({
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/v1/projects/${projectId}/requirements`,
+        `${API_V1_URL}/projects/${projectId}/requirements`,
         {
           method: 'POST',
           headers: {

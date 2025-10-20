@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
+import { API_V1_URL } from '@/config/api';
 
 interface AnalyzeDocumentModalProps {
   isOpen: boolean;
@@ -111,7 +112,7 @@ export default function AnalyzeDocumentModal({
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/v1/projects/${projectId}/analyze`,
+        `${API_V1_URL}/projects/${projectId}/analyze`,
         {
           method: 'POST',
           headers: {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { API_V1_URL } from '@/config/api';
 
 interface AuditTrailModalProps {
   isOpen: boolean;
@@ -59,8 +60,8 @@ export default function AuditTrailModal({
 
       // Determine endpoint based on whether projectId is provided
       const endpoint = projectId
-        ? `http://localhost:8000/api/v1/audit/projects/${projectId}?${params}`
-        : `http://localhost:8000/api/v1/audit?${params}`;
+        ? `${API_V1_URL}/audit/projects/${projectId}?${params}`
+        : `${API_V1_URL}/audit?${params}`;
 
       const response = await fetch(endpoint, {
         headers: {

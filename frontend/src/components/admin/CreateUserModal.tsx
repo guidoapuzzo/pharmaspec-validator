@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from '@/components/common/Modal';
 import Button from '@/components/common/Button';
+import { API_V1_URL } from '@/config/api';
 
 interface CreateUserModalProps {
   isOpen: boolean;
@@ -64,7 +65,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }: CreateUs
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/users/', {
+      const response = await fetch(`${API_V1_URL}/users/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,

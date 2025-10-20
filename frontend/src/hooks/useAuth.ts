@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, createContext, useCallback, ReactNode } from 'react';
+import { API_V1_URL } from '@/config/api';
 
 interface User {
   id: number;
@@ -49,7 +50,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       formData.append('username', credentials.username);
       formData.append('password', credentials.password);
 
-      const response = await fetch('http://localhost:8000/api/v1/auth/token', {
+      const response = await fetch(`${API_V1_URL}/auth/token`, {
         method: 'POST',
         body: formData,
       });
@@ -65,7 +66,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       localStorage.setItem('refresh_token', data.refresh_token);
 
       // Fetch user data
-      const userResponse = await fetch('http://localhost:8000/api/v1/auth/me', {
+      const userResponse = await fetch(`${API_V1_URL}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${data.access_token}`,
         },
@@ -125,7 +126,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       try {
         // Verify token is valid by fetching user data
-        const userResponse = await fetch('http://localhost:8000/api/v1/auth/me', {
+        const userResponse = await fetch(`${API_V1_URL}/auth/me`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { API_V1_URL } from '@/config/api';
 import { Card, CardContent } from '@/components/common/Card';
 import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
@@ -118,31 +119,31 @@ export default function ProjectDetailsPage() {
 
       // Fetch project details, documents, requirements, matrix entries, and recent activity in parallel
       const [projectResponse, documentsResponse, requirementsResponse, matrixResponse, activityResponse] = await Promise.all([
-        fetch(`http://localhost:8000/api/v1/projects/${id}`, {
+        fetch(`${API_V1_URL}/projects/${id}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json',
           },
         }),
-        fetch(`http://localhost:8000/api/v1/projects/${id}/documents`, {
+        fetch(`${API_V1_URL}/projects/${id}/documents`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json',
           },
         }),
-        fetch(`http://localhost:8000/api/v1/projects/${id}/requirements`, {
+        fetch(`${API_V1_URL}/projects/${id}/requirements`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json',
           },
         }),
-        fetch(`http://localhost:8000/api/v1/projects/${id}/matrix`, {
+        fetch(`${API_V1_URL}/projects/${id}/matrix`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json',
           },
         }),
-        fetch(`http://localhost:8000/api/v1/audit/projects/${id}?limit=10`, {
+        fetch(`${API_V1_URL}/audit/projects/${id}?limit=10`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json',
@@ -373,7 +374,7 @@ export default function ProjectDetailsPage() {
     setIsDeleting(true);
     try {
       const response = await fetch(
-        `http://localhost:8000/api/v1/requirements/${requirementToDelete.id}`,
+        `${API_V1_URL}/requirements/${requirementToDelete.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -403,7 +404,7 @@ export default function ProjectDetailsPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/v1/requirements/${requirement.id}`,
+        `${API_V1_URL}/requirements/${requirement.id}`,
         {
           method: 'PUT',
           headers: {
@@ -433,7 +434,7 @@ export default function ProjectDetailsPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/v1/requirements/${requirement.id}`,
+        `${API_V1_URL}/requirements/${requirement.id}`,
         {
           method: 'PUT',
           headers: {
@@ -474,7 +475,7 @@ export default function ProjectDetailsPage() {
     setIsDeleting(true);
     try {
       const response = await fetch(
-        `http://localhost:8000/api/v1/projects/${id}/documents/${documentToDelete.id}`,
+        `${API_V1_URL}/projects/${id}/documents/${documentToDelete.id}`,
         {
           method: 'DELETE',
           headers: {
@@ -509,7 +510,7 @@ export default function ProjectDetailsPage() {
     setIsDeleting(true);
     try {
       const response = await fetch(
-        `http://localhost:8000/api/v1/projects/${id}`,
+        `${API_V1_URL}/projects/${id}`,
         {
           method: 'DELETE',
           headers: {

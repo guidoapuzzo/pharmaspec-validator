@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { API_V1_URL } from '@/config/api';
 
 interface ProjectSummary {
   id: number;
@@ -34,7 +35,7 @@ export default function ArchivedProjectsPage() {
       setError(null);
 
       // Fetch only archived projects
-      const response = await fetch('http://localhost:8000/api/v1/projects/?status=archived', {
+      const response = await fetch(`${API_V1_URL}/projects/?status=archived`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           'Content-Type': 'application/json',

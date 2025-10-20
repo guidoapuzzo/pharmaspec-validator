@@ -3,6 +3,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { Navigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/common/Card';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
+import { API_V1_URL } from '@/config/api';
 
 interface AuditLogEntry {
   id: number;
@@ -49,7 +50,7 @@ export default function AuditTrailPage() {
           }
         });
 
-        const response = await fetch(`http://localhost:8000/api/v1/audit/?${searchParams}`, {
+        const response = await fetch(`${API_V1_URL}/audit/?${searchParams}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json',
@@ -139,7 +140,7 @@ export default function AuditTrailPage() {
         }
       });
 
-      const response = await fetch(`http://localhost:8000/api/v1/audit/export?${searchParams}`, {
+      const response = await fetch(`${API_V1_URL}/audit/export?${searchParams}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },

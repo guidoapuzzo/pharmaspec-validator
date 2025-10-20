@@ -1,15 +1,13 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { 
-  User, 
-  AuthToken, 
-  LoginCredentials, 
-  Project, 
-  ProjectSummary, 
-  ProjectCreate 
+import {
+  User,
+  AuthToken,
+  LoginCredentials,
+  Project,
+  ProjectSummary,
+  ProjectCreate
 } from '@/types';
-
-// API Base Configuration
-const API_BASE_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000';
+import { API_BASE_URL } from '@/config/api';
 
 class ApiService {
   protected api: AxiosInstance;

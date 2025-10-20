@@ -5,6 +5,7 @@ import Button from '@/components/common/Button';
 import LoadingSpinner from '@/components/common/LoadingSpinner';
 import CreateUserModal from '@/components/admin/CreateUserModal';
 import EditUserModal from '@/components/admin/EditUserModal';
+import { API_V1_URL } from '@/config/api';
 
 interface User {
   id: number;
@@ -35,7 +36,7 @@ export default function UserManagementPage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('http://localhost:8000/api/v1/users/', {
+      const response = await fetch(`${API_V1_URL}/users/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
           'Content-Type': 'application/json',
@@ -104,7 +105,7 @@ export default function UserManagementPage() {
 
     try {
       const response = await fetch(
-        `http://localhost:8000/api/v1/users/${user.id}/${action}`,
+        `${API_V1_URL}/users/${user.id}/${action}`,
         {
           method: 'PATCH',
           headers: {

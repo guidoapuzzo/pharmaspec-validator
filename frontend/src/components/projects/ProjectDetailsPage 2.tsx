@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_V1_URL } from '@/config/api';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/common/Card';
 import Button from '@/components/common/Button';
@@ -34,7 +35,7 @@ export default function ProjectDetailsPage() {
         setError(null);
 
         // Fetch project details - note: no trailing slash
-        const projectResponse = await fetch(`http://localhost:8000/api/v1/projects/${id}`, {
+        const projectResponse = await fetch(`${API_V1_URL}/projects/${id}`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
             'Content-Type': 'application/json',
