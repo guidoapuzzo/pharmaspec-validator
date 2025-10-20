@@ -94,7 +94,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_URL=/api
+        - VITE_API_URL=
     restart: unless-stopped
     networks:
       - pharmaspec-network
