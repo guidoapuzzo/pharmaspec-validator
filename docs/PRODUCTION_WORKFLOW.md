@@ -330,7 +330,7 @@ sudo mkdir -p /opt/backups/pharmaspec
 sudo chown $USER:$USER /opt/backups/pharmaspec
 
 # Test backup
-./backup-production.sh
+./scripts/backup-production.sh
 
 # Schedule daily backups
 crontab -e
@@ -427,7 +427,7 @@ git clone https://github.com/your-company/pharmaspec-validator.git
 cd pharmaspec-validator
 
 # Run automated setup script
-./dev-setup.sh
+./scripts/dev-setup.sh
 
 # This script will:
 # - Create .env from .env.example
@@ -465,16 +465,16 @@ npm install
 
 # Run migrations
 cd ..
-python run_migration.py backend/init.sql
-python run_migration.py backend/migrations/001_add_project_password_protection.sql
-python run_migration.py backend/migrations/002_add_document_id_to_matrix_entries.sql
+python scripts/run_migration.py backend/init.sql
+python scripts/run_migration.py backend/migrations/001_add_project_password_protection.sql
+python scripts/run_migration.py backend/migrations/002_add_document_id_to_matrix_entries.sql
 ```
 
 ### Starting Development Environment
 
 ```bash
 # Option 1: Use helper script
-./dev-setup.sh
+./scripts/dev-setup.sh
 
 # Option 2: Start services manually
 
@@ -549,7 +549,7 @@ CREATE INDEX idx_projects_owner ON projects(owner_id);
 **3b. Run Migration Locally**
 
 ```bash
-python run_migration.py backend/migrations/003_add_project_owner.sql
+python scripts/run_migration.py backend/migrations/003_add_project_owner.sql
 ```
 
 **3c. Update Backend Model**
@@ -690,7 +690,7 @@ git push origin main
 nano backend/migrations/00X_description.sql
 
 # Test locally first
-python run_migration.py backend/migrations/00X_description.sql
+python scripts/run_migration.py backend/migrations/00X_description.sql
 
 # Verify migration worked
 # Check database directly:
@@ -736,9 +736,9 @@ docker volume rm pharmaspec-validator_postgres_data
 docker-compose up -d postgres redis
 
 # Rerun all migrations
-python run_migration.py backend/init.sql
-python run_migration.py backend/migrations/001_*.sql
-python run_migration.py backend/migrations/002_*.sql
+python scripts/run_migration.py backend/init.sql
+python scripts/run_migration.py backend/migrations/001_*.sql
+python scripts/run_migration.py backend/migrations/002_*.sql
 
 # Restart backend
 cd backend
@@ -805,7 +805,7 @@ cd /opt/pharmaspec-validator
 
 ```bash
 # Backup database
-./backup-production.sh
+./scripts/backup-production.sh
 
 # Note the backup filename (includes timestamp)
 ls -lah /opt/backups/pharmaspec/
@@ -844,7 +844,7 @@ nano .env.production
 ls -la backend/migrations/
 
 # Apply new migrations in order
-python3 run_migration.py backend/migrations/003_new_migration.sql
+python3 scripts/run_migration.py backend/migrations/003_new_migration.sql
 
 # Verify migration succeeded
 # Check logs for errors
@@ -924,7 +924,7 @@ docker compose -f docker-compose.production.yml up -d --scale backend=2 --no-rec
 git pull origin main
 
 # Apply migrations (ensure backward compatible!)
-python3 run_migration.py backend/migrations/003_*.sql
+python3 scripts/run_migration.py backend/migrations/003_*.sql
 
 # Rebuild and replace containers one at a time
 docker compose -f docker-compose.production.yml up -d --build --no-deps backend
@@ -1059,7 +1059,7 @@ If newly deployed code is broken:
 
 ```bash
 # Quick rollback using script
-./rollback.sh
+./scripts/rollback.sh
 
 # This will:
 # - Stop services
@@ -1095,7 +1095,7 @@ nano backend/migrations/003_rollback.sql
 # Write SQL to undo the migration
 # Example: ALTER TABLE projects DROP COLUMN owner_id;
 
-python3 run_migration.py backend/migrations/003_rollback.sql
+python3 scripts/run_migration.py backend/migrations/003_rollback.sql
 
 # Restart services
 docker compose -f docker-compose.production.yml restart backend celery
@@ -1103,7 +1103,7 @@ docker compose -f docker-compose.production.yml restart backend celery
 
 ```bash
 # Option 2: Restore from backup
-./backup-production.sh  # Create current backup first!
+./scripts/backup-production.sh  # Create current backup first!
 
 # List backups
 ls -lah /opt/backups/pharmaspec/

@@ -121,7 +121,7 @@ nano .env.production
 5. **Create Backup (if services are running):**
 ```bash
 # Only if production is already running
-./backup-production.sh
+./scripts/backup-production.sh
 ```
 
 6. **Pull Latest Code:**

@@ -138,7 +138,7 @@ cd /opt/pharmaspec-validator
 git pull origin main
 
 # Apply migrations (if any)
-python3 run_migration.py backend/migrations/00X_new_migration.sql
+python3 scripts/run_migration.py backend/migrations/00X_new_migration.sql
 
 # Rebuild and restart
 docker compose -f docker-compose.production.yml up -d --build
@@ -177,7 +177,7 @@ git commit -m "Add new_field to projects table"
 python scripts/run_migration.py backend/migrations/00X_migration.sql
 
 # Production (SSH to server first)
-python3 run_migration.py backend/migrations/00X_migration.sql
+python3 scripts/run_migration.py backend/migrations/00X_migration.sql
 ```
 
 ---
