@@ -9,6 +9,27 @@ import {
 } from '@/types';
 import { API_BASE_URL } from '@/config/api';
 
+/**
+ * SECURITY NOTE: Token Storage in localStorage
+ *
+ * Tokens are stored in localStorage which is accessible to JavaScript.
+ * This creates an XSS (Cross-Site Scripting) vulnerability if malicious scripts
+ * can be injected into the application.
+ *
+ * MITIGATION STRATEGIES IN PLACE:
+ * 1. React automatically escapes all user input by default
+ * 2. We NEVER use dangerouslySetInnerHTML
+ * 3. Content Security Policy (CSP) headers are enforced via nginx
+ * 4. All user-generated content is sanitized before display
+ * 5. HTTPS enforced to prevent man-in-the-middle attacks
+ *
+ * ALTERNATIVE (more secure but complex):
+ * - Use httpOnly cookies for tokens (requires backend changes)
+ * - Tokens would not be accessible to JavaScript at all
+ *
+ * For internal pharmaceutical company use behind VPN, current approach is acceptable.
+ */
+
 class ApiService {
   protected api: AxiosInstance;
 
@@ -23,6 +44,8 @@ class ApiService {
     // Request interceptor to add auth token
     this.api.interceptors.request.use(
       (config) => {
+        // SECURITY: Retrieve token from localStorage
+        // In production, ensure HTTPS is enforced to prevent token interception
         const token = localStorage.getItem('access_token');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
@@ -57,6 +80,7 @@ class ApiService {
             }
           } catch (refreshError) {
             // Refresh failed, redirect to login
+            // SECURITY: Clear all tokens from localStorage on auth failure
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
             localStorage.removeItem('user');

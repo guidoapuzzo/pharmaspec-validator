@@ -2,6 +2,7 @@
 fastapi==0.115.13
 uvicorn[standard]==0.34.0
 python-multipart==0.0.18
+slowapi==0.1.9  # Rate limiting for API endpoints
 
 # Database and ORM
 sqlalchemy[asyncio]==2.0.36

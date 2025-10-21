@@ -180,6 +180,11 @@ secrets/
 *.pem
 *.crt
 
+# Sensitive IT documentation (company-specific, not for public GitHub)
+docs/IT_TECHNICAL_BRIEF.md
+docs/SECURITY.md
+docs/IT_PRESENTATION_SCRIPT.md
+
 # Temporary files
 tmp/
 temp/

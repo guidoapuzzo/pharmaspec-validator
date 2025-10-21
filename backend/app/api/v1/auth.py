@@ -6,12 +6,14 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from sqlalchemy.sql import func
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.api.deps import get_current_user, log_audit_event
 from app.core.database import get_db
 from app.core.security import (
     create_access_token,
-    create_refresh_token, 
+    create_refresh_token,
     verify_password,
     get_password_hash,
     verify_token
@@ -19,7 +21,7 @@ from app.core.security import (
 from app.core.config import settings
 from app.models.user import User
 from app.schemas.user import (
-    Token, 
+    Token,
     User as UserSchema,
     RefreshTokenRequest,
     PasswordChangeRequest
@@ -27,8 +29,12 @@ from app.schemas.user import (
 
 router = APIRouter()
 
+# Rate limiter instance for auth endpoints
+limiter = Limiter(key_func=get_remote_address)
+
 
 @router.post("/token", response_model=Token)
+@limiter.limit("5/minute")  # SECURITY: Max 5 login attempts per minute to prevent brute force
 async def login_for_access_token(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -37,6 +43,8 @@ async def login_for_access_token(
     """
     OAuth2 compatible token login with scopes
     Following FastAPI OAuth2 pattern from Context7 docs
+
+    SECURITY: Rate limited to 5 attempts per minute per IP address
     """
     # Query user by email
     stmt = select(User).where(User.email == form_data.username)

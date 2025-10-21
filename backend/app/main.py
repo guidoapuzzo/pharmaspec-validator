@@ -7,6 +7,9 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings
 from app.core.database import create_tables
@@ -45,7 +48,7 @@ async def lifespan(app: FastAPI):
 
 def create_application() -> FastAPI:
     """Create FastAPI application with all configurations"""
-    
+
     app = FastAPI(
         title=settings.PROJECT_NAME,
         version="1.0.0",
@@ -55,20 +58,34 @@ def create_application() -> FastAPI:
         redoc_url=f"{settings.API_V1_STR}/redoc",
         lifespan=lifespan
     )
+
+    # SECURITY: Configure rate limiting to prevent brute force attacks
+    # Default limits: 200 requests per day, 50 per hour (can be overridden per endpoint)
+    limiter = Limiter(
+        key_func=get_remote_address,
+        default_limits=["200/day", "50/hour"],
+        storage_uri="memory://"  # Use in-memory storage (consider Redis for production clusters)
+    )
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    logger.info("Rate limiting enabled: 200/day, 50/hour default")
     
     # Add CORS middleware
+    # SECURITY: Explicitly define allowed methods and headers (no wildcards in production)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.BACKEND_CORS_ORIGINS,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "X-Request-ID", "Accept"],
     )
     logger.info(f"CORS enabled for origins: {settings.BACKEND_CORS_ORIGINS}")
 
+    # SECURITY: Only allow specific trusted hosts (no wildcards)
+    # Configure via TRUSTED_HOSTS environment variable in production
     app.add_middleware(
         TrustedHostMiddleware,
-        allowed_hosts=["localhost", "127.0.0.1", "*.pharmaspec.local"]
+        allowed_hosts=settings.TRUSTED_HOSTS
     )
     
     # Add custom middleware for audit logging
