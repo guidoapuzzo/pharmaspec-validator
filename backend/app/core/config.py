@@ -123,7 +123,12 @@ class Settings(BaseSettings):
     OLLAMA_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2:3b"
 
+    # Mistral AI Services
+    MISTRAL_API_KEY: Optional[str] = None
+    MISTRAL_OCR_MODEL: str = "mistral-ocr-latest"
+
     # AI Model Selection
+    EXTRACTION_PROVIDER: str = "gemini"  # "gemini" or "mistral"
     MATRIX_GENERATION_PROVIDER: str = "gemini"  # "gemini" or "ollama"
     GEMINI_MODEL_EXTRACTION: str = "gemini-2.5-flash"
     GEMINI_MODEL_MATRIX: str = "gemini-2.5-pro"
