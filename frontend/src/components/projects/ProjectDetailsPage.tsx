@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { API_V1_URL } from '@/config/api';
@@ -105,7 +105,13 @@ export default function ProjectDetailsPage() {
   const [selectedDocumentForJson, setSelectedDocumentForJson] = useState<Document | null>(null);
   const [redirectToDashboard, setRedirectToDashboard] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [pollingInterval, setPollingInterval] = useState<number | null>(null);
+  const pollingIntervalRef = useRef<number | null>(null);
+  const documentsRef = useRef<Document[]>(documents);
+
+  // Keep documentsRef in sync with documents state
+  useEffect(() => {
+    documentsRef.current = documents;
+  }, [documents]);
 
   // Check if user can edit (engineers can, admins cannot)
   const canEdit = user?.role !== 'admin';
@@ -208,39 +214,72 @@ export default function ProjectDetailsPage() {
     }
   }, [id]);
 
+  // Lightweight polling function that only checks document status
+  const pollDocumentStatus = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      // Only fetch documents, no loading spinner
+      const documentsResponse = await fetch(`${API_V1_URL}/projects/${id}/documents`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!documentsResponse.ok) {
+        console.error('Failed to poll document status');
+        return;
+      }
+
+      const documentsData = await documentsResponse.json();
+
+      // Only update state if data actually changed
+      const currentDocsJson = JSON.stringify(documentsRef.current);
+      const newDocsJson = JSON.stringify(documentsData);
+
+      if (currentDocsJson !== newDocsJson) {
+        console.log('Document status changed, updating UI');
+        setDocuments(documentsData);
+      }
+    } catch (error) {
+      console.error('Error polling document status:', error);
+      // Silently fail - don't disrupt user experience
+    }
+  }, [id]);
+
   useEffect(() => {
     fetchProjectData();
   }, [fetchProjectData, refreshTrigger]);
 
   // Poll for document status updates when any document is processing
+  // This effect only runs once on mount and cleans up on unmount
   useEffect(() => {
-    // Check if any documents are currently processing
-    const hasProcessingDocuments = documents.some(
-      doc => doc.extraction_status === 'processing'
-    );
+    console.log('Setting up polling interval...');
 
-    if (hasProcessingDocuments && !pollingInterval) {
-      // Start polling every 5 seconds
-      console.log('Starting polling for document status updates...');
-      const interval = setInterval(() => {
-        console.log('Polling for updates...');
-        fetchProjectData();
-      }, 5000);
-      setPollingInterval(interval);
-    } else if (!hasProcessingDocuments && pollingInterval) {
-      // Stop polling when no documents are processing
-      console.log('Stopping polling - all documents processed');
-      clearInterval(pollingInterval);
-      setPollingInterval(null);
-    }
+    pollingIntervalRef.current = window.setInterval(() => {
+      // Check current status using ref (always has latest state)
+      const hasProcessingDocuments = documentsRef.current.some(
+        doc => doc.extraction_status === 'processing'
+      );
 
-    // Cleanup on unmount
+      if (hasProcessingDocuments) {
+        console.log('Polling for updates - found processing documents');
+        pollDocumentStatus(); // Use lightweight polling instead of full fetchProjectData
+      }
+      // If no processing documents, the interval keeps running but does nothing
+      // It will automatically start fetching again if processing documents appear
+    }, 5000);
+
+    // Cleanup on unmount or when pollDocumentStatus changes (e.g., project ID changes)
     return () => {
-      if (pollingInterval) {
-        clearInterval(pollingInterval);
+      console.log('Cleaning up polling interval');
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
       }
     };
-  }, [documents, pollingInterval, fetchProjectData]);
+  }, [pollDocumentStatus]); // Re-create interval if pollDocumentStatus changes (different project)
 
   if (!id) {
     return <Navigate to="/dashboard" replace />;

@@ -214,8 +214,12 @@ export default function UploadDocumentsModal({
       // Call success callback if all uploaded (even if still processing)
       if (allSuccessful && onSuccess) {
         onSuccess();
+        // Close modal after a brief delay to show processing started
+        setTimeout(() => {
+          handleClose();
+        }, 1000);
       }
-      
+
     } finally {
       setIsUploading(false);
     }
