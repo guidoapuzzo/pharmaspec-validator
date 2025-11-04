@@ -136,8 +136,14 @@ export default function AnalyzeDocumentModal({
       setResults(data);
       setProgress({ current: selectedRequirementIds.size, total: selectedRequirementIds.size });
 
+      // Close modal immediately to prevent glitches from parent re-render
+      onClose();
+
+      // Refresh parent data after modal is closing
       if (onSuccess) {
-        onSuccess();
+        setTimeout(() => {
+          onSuccess();
+        }, 300);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze document');
