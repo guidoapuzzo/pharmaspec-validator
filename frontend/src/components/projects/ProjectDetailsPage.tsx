@@ -588,16 +588,13 @@ export default function ProjectDetailsPage() {
     worksheet.columns = [
       { header: 'Requirement ID', key: 'reqId', width: 20 },
       { header: 'Requirement Description', key: 'reqDesc', width: 45 },
-      { header: 'Category', key: 'category', width: 15 },
-      { header: 'Priority', key: 'priority', width: 12 },
       { header: 'Document', key: 'document', width: 30 },
       { header: 'Spec Reference', key: 'specRef', width: 45 },
       { header: 'Supplier Response', key: 'supplierResp', width: 50 },
-      { header: 'Justification', key: 'justification', width: 50 },
       { header: 'Compliance Status', key: 'compliance', width: 18 },
+      { header: 'Justification', key: 'justification', width: 50 },
       { header: 'Test Reference', key: 'testRef', width: 30 },
       { header: 'Risk Assessment', key: 'risk', width: 45 },
-      { header: 'Review Status', key: 'reviewStatus', width: 15 },
       { header: 'Comments', key: 'comments', width: 40 }
     ];
 
@@ -633,16 +630,13 @@ export default function ProjectDetailsPage() {
       const row = worksheet.addRow({
         reqId: requirement?.requirement_id || 'N/A',
         reqDesc: requirement?.description || '',
-        category: requirement?.category || '',
-        priority: requirement?.priority || '',
         document: document?.original_filename || 'N/A',
         specRef: entry.spec_reference || '',
         supplierResp: entry.supplier_response || '',
-        justification: entry.justification || '',
         compliance: entry.compliance_status || '',
+        justification: entry.justification || '',
         testRef: entry.test_reference || '',
         risk: entry.risk_assessment || '',
-        reviewStatus: entry.review_status || '',
         comments: entry.comments || ''
       });
 
@@ -656,6 +650,36 @@ export default function ProjectDetailsPage() {
           right: { style: 'thin' }
         };
       });
+
+      // Apply conditional formatting to Compliance Status cell (column 6)
+      const complianceCell = row.getCell(6);
+      const complianceValue = entry.compliance_status;
+
+      if (complianceValue === 'Compliant') {
+        complianceCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF92D050' } // Green
+        };
+      } else if (complianceValue === 'Non-compliant') {
+        complianceCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFF6B6B' } // Red
+        };
+      } else if (complianceValue === 'Partial') {
+        complianceCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFFFEB3B' } // Yellow
+        };
+      } else {
+        complianceCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFD3D3D3' } // Light gray
+        };
+      }
     });
 
     // Generate Excel file and download
