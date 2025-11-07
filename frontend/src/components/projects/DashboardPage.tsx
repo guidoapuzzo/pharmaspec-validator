@@ -30,8 +30,9 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterOwner, setFilterOwner] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [myProjectsExpanded, setMyProjectsExpanded] = useState(true);
+  const [otherProjectsExpanded, setOtherProjectsExpanded] = useState(true);
 
   const fetchProjects = async () => {
     try {
@@ -75,11 +76,6 @@ export default function DashboardPage() {
       filtered = filtered.filter(p => p.status === filterStatus);
     }
 
-    // Filter by owner
-    if (filterOwner !== 'all') {
-      filtered = filtered.filter(p => p.owner_id === parseInt(filterOwner));
-    }
-
     // Filter by search query (project name)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -91,12 +87,11 @@ export default function DashboardPage() {
     }
 
     setProjects(filtered);
-  }, [allProjects, filterStatus, filterOwner, searchQuery]);
+  }, [allProjects, filterStatus, searchQuery]);
 
-  // Get unique owners for filter dropdown
-  const uniqueOwners = Array.from(
-    new Map(allProjects.map(p => [p.owner_id, { id: p.owner_id, name: p.owner_name }])).values()
-  );
+  // Split projects into "My Projects" and "Other Projects"
+  const myProjects = projects.filter(p => p.owner_id === user?.id);
+  const otherProjects = projects.filter(p => p.owner_id !== user?.id);
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -159,7 +154,7 @@ export default function DashboardPage() {
       {/* Filters */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Search */}
             <div>
               <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
@@ -191,31 +186,14 @@ export default function DashboardPage() {
                 <option value="completed">Completed</option>
               </select>
             </div>
-
-            {/* Owner Filter */}
-            <div>
-              <label htmlFor="owner-filter" className="block text-sm font-medium text-gray-700 mb-1">
-                Filter by Owner
-              </label>
-              <select
-                id="owner-filter"
-                value={filterOwner}
-                onChange={(e) => setFilterOwner(e.target.value)}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-pharma-500 focus:ring-pharma-500 sm:text-sm px-3 py-2 border text-gray-900"
-              >
-                <option value="all">All Owners</option>
-                {uniqueOwners.map((owner) => (
-                  <option key={owner.id} value={owner.id}>
-                    {owner.name}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {/* Results count */}
           <div className="mt-3 text-sm text-gray-600">
             Showing {projects.length} of {allProjects.length} projects
+            {myProjects.length > 0 && otherProjects.length > 0 && (
+              <span> ({myProjects.length} yours, {otherProjects.length} others)</span>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -301,10 +279,8 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Projects List */}
+      {/* Projects List - Grouped by Ownership */}
       <div className="space-y-6">
-        <h3 className="text-lg font-medium text-gray-900">Recent Projects</h3>
-        
         {error && (
           <div className="rounded-md bg-red-50 p-4">
             <div className="flex">
@@ -341,52 +317,132 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {projects.map((project) => (
-              <Card key={project.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-3">
-                        <Link
-                          to={`/projects/${project.id}`}
-                          className="text-lg font-medium text-gray-900 hover:text-pharma-600"
-                        >
-                          {project.name}
-                        </Link>
-                        {getStatusBadge(project.status)}
-                      </div>
-                      <p className="mt-2 text-sm text-gray-600 line-clamp-2">
-                        {project.description}
-                      </p>
-                      <div className="mt-3 flex items-center space-x-6 text-sm text-gray-500">
-                        <span>
-                          Owner: {project.owner_name}
-                          {user?.id === project.owner_id && (
-                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-pharma-100 text-pharma-800">
-                              You
-                            </span>
-                          )}
-                        </span>
-                        <span>Created: {formatDate(project.created_at)}</span>
-                      </div>
-                      <div className="mt-2 flex items-center space-x-6 text-sm text-gray-500">
-                        <span>Documents: {project.documents_count}</span>
-                        <span>Requirements: {project.requirements_count}</span>
-                        <span>Matrix Entries: {project.matrix_entries_count}</span>
-                        <span>Completion: {project.completion_percentage.toFixed(0)}%</span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Link to={`/projects/${project.id}`}>
-                        <Button variant="outline" size="sm">View Details</Button>
-                      </Link>
-                    </div>
+          <>
+            {/* My Projects Section */}
+            {myProjects.length > 0 && (
+              <div className="space-y-4">
+                <button
+                  onClick={() => setMyProjectsExpanded(!myProjectsExpanded)}
+                  className="w-full flex items-center justify-between p-4 bg-pharma-50 hover:bg-pharma-100 rounded-lg transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">📁</span>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      My Projects
+                      <span className="ml-2 text-sm font-normal text-gray-600">({myProjects.length})</span>
+                    </h3>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <span className="text-gray-500">
+                    {myProjectsExpanded ? '▼' : '▶'}
+                  </span>
+                </button>
+
+                {myProjectsExpanded && (
+                  <div className="space-y-4 pl-4">
+                    {myProjects.map((project) => (
+                      <Card key={project.id}>
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-3">
+                                <Link
+                                  to={`/projects/${project.id}`}
+                                  className="text-lg font-medium text-gray-900 hover:text-pharma-600"
+                                >
+                                  {project.name}
+                                </Link>
+                                {getStatusBadge(project.status)}
+                              </div>
+                              <p className="mt-2 text-sm text-gray-600 line-clamp-2">
+                                {project.description}
+                              </p>
+                              <div className="mt-3 flex items-center space-x-6 text-sm text-gray-500">
+                                <span>Created: {formatDate(project.created_at)}</span>
+                              </div>
+                              <div className="mt-2 flex items-center space-x-6 text-sm text-gray-500">
+                                <span>Documents: {project.documents_count}</span>
+                                <span>Requirements: {project.requirements_count}</span>
+                                <span>Matrix Entries: {project.matrix_entries_count}</span>
+                                <span>Completion: {project.completion_percentage.toFixed(0)}%</span>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Link to={`/projects/${project.id}`}>
+                                <Button variant="outline" size="sm">View Details</Button>
+                              </Link>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Other Projects Section */}
+            {otherProjects.length > 0 && (
+              <div className="space-y-4">
+                <button
+                  onClick={() => setOtherProjectsExpanded(!otherProjectsExpanded)}
+                  className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">👥</span>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Other Projects
+                      <span className="ml-2 text-sm font-normal text-gray-600">({otherProjects.length})</span>
+                    </h3>
+                  </div>
+                  <span className="text-gray-500">
+                    {otherProjectsExpanded ? '▼' : '▶'}
+                  </span>
+                </button>
+
+                {otherProjectsExpanded && (
+                  <div className="space-y-4 pl-4">
+                    {otherProjects.map((project) => (
+                      <Card key={project.id}>
+                        <CardContent className="p-6">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-3">
+                                <Link
+                                  to={`/projects/${project.id}`}
+                                  className="text-lg font-medium text-gray-900 hover:text-pharma-600"
+                                >
+                                  {project.name}
+                                </Link>
+                                {getStatusBadge(project.status)}
+                              </div>
+                              <p className="mt-2 text-sm text-gray-600 line-clamp-2">
+                                {project.description}
+                              </p>
+                              <div className="mt-3 flex items-center space-x-6 text-sm text-gray-500">
+                                <span>Owner: {project.owner_name}</span>
+                                <span>Created: {formatDate(project.created_at)}</span>
+                              </div>
+                              <div className="mt-2 flex items-center space-x-6 text-sm text-gray-500">
+                                <span>Documents: {project.documents_count}</span>
+                                <span>Requirements: {project.requirements_count}</span>
+                                <span>Matrix Entries: {project.matrix_entries_count}</span>
+                                <span>Completion: {project.completion_percentage.toFixed(0)}%</span>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2">
+                              <Link to={`/projects/${project.id}`}>
+                                <Button variant="outline" size="sm">View Details</Button>
+                              </Link>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 

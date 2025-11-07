@@ -18,7 +18,8 @@
     "react-hook-form": "^7.54.0",
     "react-query": "^3.39.3",
     "react-router-dom": "^7.6.2",
-    "tailwind-merge": "^2.5.4"
+    "tailwind-merge": "^2.5.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
