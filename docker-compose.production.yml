@@ -9,7 +9,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./backend/migrations:/docker-entrypoint-initdb.d/migrations
-    healthcheck:
+    healthcheck:  # base, da approfondire
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pharma_user} -d ${POSTGRES_DB:-pharmaspec}"]
       interval: 30s
       timeout: 10s
@@ -102,11 +102,12 @@ services:
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"
       - "443:443"
+    # Come montare certificati? Da studiare
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
+      # Aggiungere log persistente nginx                  
     depends_on:
       - backend
       - frontend

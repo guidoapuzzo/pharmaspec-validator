@@ -44,16 +44,26 @@ yum install certbot python3-certbot-nginx      # RHEL/CentOS
 certbot --nginx -d yourdomain.com
 ```
 
-## Enabling HTTPS in nginx
+## ⚠️ HTTPS È OBBLIGATORIO
 
-After generating certificates:
+**IMPORTANTE**: La porta 80 (HTTP) è stata disabilitata per motivi di sicurezza. L'applicazione funziona **SOLO con HTTPS**.
 
-1. Ensure `server.crt` and `server.key` are in this directory
-2. Edit `nginx/nginx.conf`:
-   - Comment out the HTTP-only location blocks
-   - Uncomment the HTTPS server block
-   - Uncomment the HTTP to HTTPS redirect
-3. Restart nginx: `docker-compose -f docker-compose.production.yml restart nginx`
+### Setup Certificati
+
+Certificati SSL **obbligatori** prima del deploy:
+
+1. Generare certificati con uno dei metodi sopra
+2. Assicurarsi che `server.crt` e `server.key` siano in questa directory
+3. Verificare che `nginx/nginx.conf` abbia il server block HTTPS attivo (è già configurato)
+4. Avviare: `docker-compose -f docker-compose.production.yml up -d`
+
+### ✅ Configurazione Attuale
+
+- ✅ Server block HTTPS (porta 443): **ATTIVO**
+- ❌ Server block HTTP (porta 80): **DISABILITATO** (per sicurezza)
+- ✅ Security headers: **ABILITATI** (HSTS, CSP, X-Frame-Options, etc.)
+
+Gli utenti devono usare esplicitamente `https://` nell'URL.
 
 ## File Permissions
 
