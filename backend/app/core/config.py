@@ -18,6 +18,14 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30  # 30 minutes for GxP compliance
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
+    # Cookie Security Settings (for future cookie-based authentication)
+    # Currently using JWT Bearer tokens, but these settings are ready for cookie auth
+    COOKIE_SECURE: bool = True          # Only send cookies over HTTPS
+    COOKIE_HTTPONLY: bool = True        # Prevent JavaScript access (XSS protection)
+    COOKIE_SAMESITE: str = "lax"        # CSRF protection ("strict", "lax", or "none")
+    COOKIE_MAX_AGE: int = 86400         # 24 hours (in seconds)
+    COOKIE_DOMAIN: Optional[str] = None  # Set to specific domain in production
+
     PROJECT_NAME: str = "PharmaSpec Validator"
 
     # CORS - Configure in production via BACKEND_CORS_ORIGINS environment variable

@@ -186,6 +186,8 @@ docs/
 # Deployment guides (internal use only, not for public GitHub)
 DEPLOYMENT_GUIDE_COMPLETE.md
 SECURITY_PORT_80_DISABLED.md
+SECURITY_BACKEND_TODO.md
+SECURITY_IMPLEMENTATION_COMPLETE.md
 
 # Temporary files
 tmp/
