@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 
-@router.post("/csp-report", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/csp-report", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 @limiter.limit("100/hour")  # Limit CSP reports to prevent abuse
 async def csp_violation_report(request: Request) -> Any:
     """
